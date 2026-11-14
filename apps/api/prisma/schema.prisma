@@ -1,0 +1,119 @@
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum DataSourceType {
+  AUTO_TELEMETRY
+  MANUAL_REPORT
+  DIAGNOSTIC_DEVICE
+}
+enum HazardType {
+  SPACE_RADIATION
+  ALTERED_GRAVITY
+  ISOLATION_CONFINEMENT
+  DISTANCE_FROM_EARTH
+  HOSTILE_ENVIRONMENT
+}
+enum AlertSeverity {
+  NOMINAL
+  ATTENTION
+  CRITICAL
+  OUTDATED
+}
+enum BodyZone {
+  HEAD_EYES
+  CHEST_CARDIO
+  ABDOMEN_METABOLISM
+  WHOLE_BODY_IMMUNE
+  SKELETON_MUSCLES
+}
+
+model Mission {
+  id String @id @default(uuid())
+  name String @unique
+  destination String
+  phase String
+  missionDay Int
+  commDelaySeconds Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  crewMembers CrewMember[]
+  environmentLogs EnvironmentRecord[]
+  alerts Alert[]
+}
+model CrewMember {
+  id String @id @default(uuid())
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  name String
+  role String
+  photoUrl String?
+  age Int
+  status AlertSeverity @default(NOMINAL)
+  lastSyncedAt DateTime @default(now())
+  baselines IndividualBaseline[]
+  healthRecords HealthRecord[]
+  alerts Alert[]
+  @@index([missionId])
+}
+model IndividualBaseline {
+  id String @id @default(uuid())
+  crewMemberId String
+  crewMember CrewMember @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  zone BodyZone
+  baselineData Json
+  createdAt DateTime @default(now())
+  @@index([crewMemberId, zone])
+}
+model HealthRecord {
+  id String @id @default(uuid())
+  crewMemberId String
+  crewMember CrewMember @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  sourceType DataSourceType
+  zone BodyZone?
+  metrics Json
+  symptoms String[]
+  isOutdated Boolean @default(false)
+  recordedAt DateTime @default(now())
+  @@index([crewMemberId, recordedAt])
+}
+model EnvironmentRecord {
+  id String @id @default(uuid())
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  radiationCans Float
+  totalRadiation Float
+  pO2 Float
+  co2Ppm Float
+  cabinPressure Float
+  temperature Float
+  humidity Float
+  recordedAt DateTime @default(now())
+  @@index([missionId, recordedAt])
+}
+model Alert {
+  id String @id @default(uuid())
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  crewMemberId String?
+  crewMember CrewMember? @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  hazardType HazardType
+  severity AlertSeverity @default(ATTENTION)
+  title String
+  message String
+  isResolved Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([missionId, severity])
+}
+model CountermeasureProtocol {
+  id String @id @default(uuid())
+  title String
+  hazard HazardType
+  description String
+  steps String[]
+  @@unique([title])
+}

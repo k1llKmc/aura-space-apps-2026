@@ -1,0 +1,10 @@
+{
+  "name": "aura-space-apps-2026",
+  "private": true,
+  "workspaces": ["apps/api"],
+  "scripts": {
+    "db:generate": "npm --workspace apps/api run prisma:generate",
+    "db:migrate": "npm --workspace apps/api run prisma:migrate",
+    "db:seed": "npm --workspace apps/api run prisma:seed"
+  }
+}
