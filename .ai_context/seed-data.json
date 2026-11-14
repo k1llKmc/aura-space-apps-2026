@@ -1,0 +1,233 @@
+import { PrismaClient, DataSourceType, HazardType, AlertSeverity, BodyZone } from '@prisma/client';[cite: 1]
+
+const prisma = new PrismaClient();[cite: 1]
+
+async function main() {
+  console.log('Start seeding...');
+
+  // ==========================================
+  // 1. Создание миссий (Mission)
+  // ==========================================
+  const marsMission = await prisma.mission.create({
+    data: {
+      name: 'Mars Transit 2026',[cite: 1]
+      destination: 'Mars',[cite: 1]
+      phase: 'Cruise Phase',[cite: 1]
+      missionDay: 180,[cite: 1]
+      commDelaySeconds: 720,[cite: 1]
+    },
+  });
+
+  const artemis2 = await prisma.mission.create({
+    data: {
+      name: 'Artemis II',[cite: 1]
+      destination: 'Moon',
+      phase: 'Lunar Flyby',
+      missionDay: 10,
+      commDelaySeconds: 3,
+    },
+  });
+
+  const issExp64 = await prisma.mission.create({
+    data: {
+      name: 'International Space Station (ISS) / Expedition 64',[cite: 1]
+      destination: 'LEO',
+      phase: 'Orbital Station',
+      missionDay: 150,
+      commDelaySeconds: 0,
+    },
+  });
+
+  const chapea = await prisma.mission.create({
+    data: {
+      name: 'CHAPEA Mars Dune Alpha',[cite: 1]
+      destination: 'Mars Analog',
+      phase: 'Isolation Habitat',
+      missionDay: 365,
+      commDelaySeconds: 1200,
+    },
+  });
+
+  // ==========================================
+  // 2. Создание членов экипажа (CrewMember)
+  // ==========================================
+  const sarahVance = await prisma.crewMember.create({
+    data: {
+      missionId: marsMission.id,
+      name: 'Dr. Sarah Vance',[cite: 1]
+      role: 'Commander',[cite: 1]
+      age: 42,[cite: 1]
+      status: AlertSeverity.NOMINAL,[cite: 1]
+    },
+  });
+
+  const alexMercer = await prisma.crewMember.create({
+    data: {
+      missionId: marsMission.id,
+      name: 'Dr. Alex Mercer',[cite: 1]
+      role: 'Mission Specialist',
+      age: 42,[cite: 1]
+      status: AlertSeverity.ATTENTION,[cite: 1]
+    },
+  });
+
+  const davidSaint = await prisma.crewMember.create({
+    data: {
+      missionId: issExp64.id,
+      name: 'David Saint-Jacques',[cite: 1]
+      role: 'Flight Engineer',
+      age: 56,[cite: 1]
+      status: AlertSeverity.NOMINAL,[cite: 1]
+    },
+  });
+
+  const serenaAuon = await prisma.crewMember.create({
+    data: {
+      missionId: issExp64.id,
+      name: 'Serena Auñón-Chancellor',[cite: 1]
+      role: 'Medical Specialist',[cite: 1]
+      age: 48,[cite: 1]
+      status: AlertSeverity.ATTENTION,[cite: 1]
+    },
+  });
+
+  // ==========================================
+  // 3. Предполетные показатели (IndividualBaseline)
+  // ==========================================
+  await prisma.individualBaseline.create({
+    data: {
+      crewMemberId: alexMercer.id,
+      zone: BodyZone.HEAD_EYES,[cite: 1]
+      baselineData: { OCT_thickness: 280, IOP: 15, visual_acuity: 1.0 },[cite: 1]
+    },
+  });
+
+  await prisma.individualBaseline.create({
+    data: {
+      crewMemberId: sarahVance.id,
+      zone: BodyZone.SKELETON_MUSCLES,[cite: 1]
+      baselineData: { bmd_spine_t_score: 0.5, muscle_mass_kg: 68.5 },[cite: 1]
+    },
+  });
+
+  // ==========================================
+  // 4. Медицинские записи (HealthRecord)
+  // ==========================================
+  await prisma.healthRecord.create({
+    data: {
+      crewMemberId: alexMercer.id,
+      sourceType: DataSourceType.AUTO_TELEMETRY,[cite: 1]
+      zone: BodyZone.HEAD_EYES,[cite: 1]
+      metrics: { intraocularPressure: 18.5, octRetinalThickness: 285 },[cite: 1]
+      symptoms: ['Blurred Vision', 'dizziness'],[cite: 1]
+      isOutdated: false,
+    },
+  });
+
+  await prisma.healthRecord.create({
+    data: {
+      crewMemberId: sarahVance.id,
+      sourceType: DataSourceType.DIAGNOSTIC_DEVICE,[cite: 1]
+      zone: BodyZone.CHEST_CARDIO,[cite: 1]
+      metrics: { heartRateResting: 68, sleepHours: 6.5, stressLevel: 4 },[cite: 1]
+      symptoms: ['Fatigue'],[cite: 1]
+      isOutdated: false,
+    },
+  });
+
+  // ==========================================
+  // 5. Записи среды обитания (EnvironmentRecord)
+  // ==========================================
+  await prisma.environmentRecord.create({
+    data: {
+      missionId: marsMission.id,
+      radiationCans: 0.85,[cite: 1]
+      totalRadiation: 1.25,[cite: 1]
+      pO2: 21.1,[cite: 1]
+      co2Ppm: 450,[cite: 1]
+      cabinPressure: 101.3,[cite: 1]
+      temperature: 21.5,[cite: 1]
+      humidity: 50.0,[cite: 1]
+    },
+  });
+
+  await prisma.environmentRecord.create({
+    data: {
+      missionId: issExp64.id,
+      radiationCans: 0.45,[cite: 1]
+      totalRadiation: 0.65,[cite: 1]
+      pO2: 21.0,[cite: 1]
+      co2Ppm: 400,[cite: 1]
+      cabinPressure: 101.3,[cite: 1]
+      temperature: 22.0,[cite: 1]
+      humidity: 48.0,[cite: 1]
+    },
+  });
+
+  // ==========================================
+  // 6. Уведомления и риски (Alert)
+  // ==========================================
+  await prisma.alert.create({
+    data: {
+      missionId: marsMission.id,
+      crewMemberId: alexMercer.id,
+      hazardType: HazardType.ALTERED_GRAVITY,[cite: 1]
+      severity: AlertSeverity.CRITICAL,[cite: 1]
+      title: 'Optic Nerve Swelling Detected',[cite: 1]
+      message: 'Оповещение об угрозе развития космического нейро-окулярного синдрома (SANS).',[cite: 1]
+      isResolved: false,
+    },
+  });
+
+  await prisma.alert.create({
+    data: {
+      missionId: marsMission.id,
+      hazardType: HazardType.SPACE_RADIATION,[cite: 1]
+      severity: AlertSeverity.CRITICAL,[cite: 1]
+      title: 'Высокий уровень космической радиации',[cite: 1]
+      message: 'Предупреждение об опасном превышении радиационного фона и солнечных вспышках (SPE).',[cite: 1]
+      isResolved: false,
+    },
+  });
+
+  // ==========================================
+  // 7. Протоколы противодействия (CountermeasureProtocol)
+  // ==========================================
+  await prisma.countermeasureProtocol.create({
+    data: {
+      title: 'Thigh Cuffs & Fluid Shift Protocol',[cite: 1]
+      hazard: HazardType.ALTERED_GRAVITY,[cite: 1]
+      description: 'Применение окклюзионных бедренных манжет для предотвращения смещения жидкостей к голове и SANS.',[cite: 1]
+      steps: ['Надеть набедренные манжеты', 'Установить давление 50 мм рт. ст.', 'Носить 3–6 часов'],[cite: 1]
+    },
+  });
+
+  await prisma.countermeasureProtocol.create({
+    data: {
+      title: 'ARED & Zero T2 Musculoskeletal Countermeasure Protocol',[cite: 1]
+      hazard: HazardType.ALTERED_GRAVITY,[cite: 1]
+      description: 'Комплекс силовых и аэробных тренировок для предотвращения атрофии мышц и остеопороза.',[cite: 1]
+      steps: ['Силовые упражнения на ARED 2.5ч/день', 'Аэробная сессия на Zero T2', 'Фиксация ЧСС и нагрузки'],[cite: 1]
+    },
+  });
+
+  await prisma.countermeasureProtocol.create({
+    data: {
+      title: 'Radiation Storm Shelter & Shielding Protocol',[cite: 1]
+      hazard: HazardType.SPACE_RADIATION,[cite: 1]
+      description: 'Защитные протоколы при обнаружении солнечных вспышек и повышенного радиационного фона.',[cite: 1]
+      steps: ['Зафиксировать показания CANS', 'Перейти в защищенное укрытие', 'Ограничить ВКД'],[cite: 1]
+    },
+  });
+
+  console.log('Seeding finished successfully.');[cite: 1]
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
