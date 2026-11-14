@@ -7,7 +7,7 @@ async function main() {
   const data = JSON.parse(await readFile(resolve(__dirname, '../../../.ai_context/seed-data.json'), 'utf8')) as Data;
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const missions = new Map<string, string>();
-    for (const item of data.missions) { const row = await tx.mission.upsert({ where: { name: item.name }, update: item, create: item }); missions.set(item.name, row.id); }
+    for (const item of data.missions) { const values = { ...item, isCurrent: item.isCurrent ?? item.name === 'Mars Transit 2026' }; const row = await tx.mission.upsert({ where: { name: item.name }, update: values, create: values }); missions.set(item.name, row.id); }
     const crew = new Map<string, string>();
     for (const item of data.crewMembers) { const missionId = missions.get(item.mission); if (!missionId) throw new Error(`Unknown mission: ${item.mission}`); const old = await tx.crewMember.findFirst({ where: { missionId, name: item.name } }); const row = old ? await tx.crewMember.update({ where: { id: old.id }, data: { role: item.role, age: item.age, status: item.status } }) : await tx.crewMember.create({ data: { missionId, name: item.name, role: item.role, age: item.age, status: item.status } }); crew.set(item.name, row.id); }
     for (const item of data.baselines) { const crewMemberId = crew.get(item.crew); if (!crewMemberId) throw new Error(`Unknown crew member: ${item.crew}`); const old = await tx.individualBaseline.findFirst({ where: { crewMemberId, zone: item.zone } }); if (old) await tx.individualBaseline.update({ where: { id: old.id }, data: { baselineData: item.baselineData } }); else await tx.individualBaseline.create({ data: { crewMemberId, zone: item.zone, baselineData: item.baselineData } }); }

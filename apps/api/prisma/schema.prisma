@@ -39,6 +39,7 @@ model Mission {
   phase String
   missionDay Int
   commDelaySeconds Int
+  isCurrent Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   crewMembers CrewMember[]
