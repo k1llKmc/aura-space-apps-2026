@@ -79,8 +79,9 @@ export function SettingsPage() {
           <h2>Public mission workspace</h2>
           <Badge value="CURRENT" label="Interactive demo" />
           <p>
-            All visitors enter Mission Control directly. This demonstration runs
-            entirely in your browser; no account or password is required.
+            Choose a crew profile on the welcome screen, then switch profiles
+            using the selector in the header. This demonstration runs entirely
+            in your browser; no account or password is required.
           </p>
           <p className="muted">
             Reports, reference edits and warning reviews are saved on this

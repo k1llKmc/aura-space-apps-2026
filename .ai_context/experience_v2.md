@@ -28,6 +28,20 @@ panel. Native titles and focus/hover text identify zones without relying on colo
 
 ## Data and rewards
 
+Public profile selection is presentation state, not authentication. A white
+welcome screen chooses one of six fictional profiles. The choice is stored in
+sessionStorage for the current tab and appears in the header. Header changes
+show a 650 ms logo transition, remount the workspace, and reset unsaved forms and
+notifications. Daily checks and Today's mission follow the active profile.
+Profile-specific daily-check links select their requested crew; a subsequent
+header change clears that query to avoid overriding the new selection.
+
+Daily report and memory exercise must have distinct sibling React keys. Reusing
+the same crew ID for both previously retained duplicate forms on crew changes.
+Range controls explicitly associate their labels with their input IDs and update
+on input events. The browser regression test changes crew twelve times, checks
+one report only, verifies draft reset, and drags all three range controls.
+
 The v2 demo uses `aura-public-demo-v2` storage, preserving v1's browser data.
 Daily check dates are unique per crew member and UTC date. Each unique check
 earns 50 XP, regardless of its reported scores. A completed memory exercise earns

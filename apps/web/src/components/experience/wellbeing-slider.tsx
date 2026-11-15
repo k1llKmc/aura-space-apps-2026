@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { moodLabel } from './format';
 export function WellbeingSlider({
   name,
@@ -10,6 +10,7 @@ export function WellbeingSlider({
   label: string;
   hint: string;
 }) {
+  const id = useId();
   const [value, setValue] = useState(name === 'moodScore' ? 7 : 4);
   const mood = name === 'moodScore',
     description = mood
@@ -31,10 +32,10 @@ export function WellbeingSlider({
           : '☀'
     : '◌';
   return (
-    <label className="wellbeing-slider">
+    <label className="wellbeing-slider" htmlFor={id}>
       <span className="slider-heading">
         <strong>{label}</strong>
-        <output>
+        <output htmlFor={id}>
           {value}
           <small>/10</small>
         </output>
@@ -44,6 +45,7 @@ export function WellbeingSlider({
         {description}
       </span>
       <input
+        id={id}
         aria-label={label}
         aria-valuetext={`${value} out of 10, ${description}`}
         aria-describedby={`${name}-hint`}
@@ -53,6 +55,7 @@ export function WellbeingSlider({
         max={10}
         step={1}
         value={value}
+        onInput={(e) => setValue(Number(e.currentTarget.value))}
         onChange={(e) => setValue(Number(e.target.value))}
       />
       <span className="slider-ticks">

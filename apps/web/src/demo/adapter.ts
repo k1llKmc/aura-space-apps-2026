@@ -18,36 +18,13 @@ import {
   type MetricEvidence,
   type RiskStatus,
 } from '@aura/shared-types';
-import { DEMO_STORAGE, demoCrewIds, demoUser } from './config';
-import {
-  asset,
-  progress,
-  type MemoryResult,
-} from '@/components/experience/format';
+import { DEMO_STORAGE, demoCrewIds, demoUser, demoRoster } from './config';
+import { progress, type MemoryResult } from '@/components/experience/format';
 const now = () => new Date().toISOString();
 const ago = (days: number) =>
   new Date(Date.now() - days * 86400000).toISOString();
 const uuid = () => crypto.randomUUID();
-export const demoCrew = demoCrewIds.map((id, i) => ({
-  id,
-  name: [
-    'Elena Vasquez',
-    'Marcus Chen',
-    'Amara Okafor',
-    'Luca Moretti',
-    'Sofia Andersson',
-    'Noah Patel',
-  ][i],
-  role: [
-    'Mission Commander',
-    'Flight Engineer',
-    'Medical Officer',
-    'Research Specialist',
-    'Systems Engineer',
-    'Pilot',
-  ][i],
-  photoUrl: asset(`/crew/${i + 1}.jpg`),
-}));
+export const demoCrew = demoRoster;
 type Store = {
   memoryTests: MemoryResult[];
   baselines: Record<string, BaselineResponse[]>;

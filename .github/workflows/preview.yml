@@ -1,7 +1,7 @@
 name: Verify experience preview
 on:
   push:
-    branches: [feat/mission-experience-v2]
+    branches: [feat/mission-experience-v2, fix/daily-check-and-crew-entry]
   pull_request:
     branches: [main]
 permissions:

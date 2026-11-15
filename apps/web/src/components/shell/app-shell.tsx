@@ -1,12 +1,16 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSession } from '@/components/auth/session-provider';
 import { LoginScreen } from '@/components/auth/login-screen';
 import { Badge, Button, ErrorState, Modal } from '@/components/ui/ui';
 import { CommDelayBadge } from '@/components/ui/aura';
-import { DEMO_MODE, DEMO_STORAGE } from '@/demo/config';
+import { DEMO_MODE, DEMO_STORAGE, demoRoster } from '@/demo/config';
+import {
+  CrewEntryGate,
+  useCrewSession,
+} from '@/components/experience/crew-session';
 import { ThemeToggle } from '@/components/experience/theme';
 import { asset } from '@/components/experience/format';
 import { useNotifications } from '@/components/ui/notifications';
@@ -50,11 +54,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useSession();
   if (!user) return <LoginScreen />;
   return (
-    <WorkspaceProvider
-      key={`${user.id}/${user.role}/${user.missionId}/${user.crewMemberId}`}
-    >
-      <ShellContent>{children}</ShellContent>
-    </WorkspaceProvider>
+    <CrewEntryGate>
+      <WorkspaceProvider
+        key={`${user.id}/${user.role}/${user.missionId}/${user.crewMemberId}`}
+      >
+        <ShellContent>{children}</ShellContent>
+      </WorkspaceProvider>
+    </CrewEntryGate>
   );
 }
 function Navigation({ navigate }: { navigate?: () => void }) {
@@ -91,6 +97,9 @@ function Navigation({ navigate }: { navigate?: () => void }) {
   );
 }
 function ShellContent({ children }: { children: ReactNode }) {
+  const crewSession = useCrewSession(),
+    router = useRouter();
+  const activeCrew = demoRoster.find((c) => c.id === crewSession.crewId);
   const { user, logout } = useSession();
   const { mission, alerts } = useWorkspace();
   const notices = useNotifications();
@@ -214,6 +223,26 @@ function ShellContent({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="topbar-actions">
+            {DEMO_MODE && (
+              <label className="header-crew-picker">
+                <span>Crew profile</span>
+                <select
+                  aria-label="Active crew member"
+                  value={crewSession.crewId}
+                  onChange={(e) => {
+                    if (e.target.value === crewSession.crewId) return;
+                    if (path === '/daily-check') router.replace('/daily-check');
+                    crewSession.chooseCrew(e.target.value);
+                  }}
+                >
+                  {demoRoster.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <ThemeToggle />
             <div className="comm-delay" title="Mission communication delay">
               <CommDelayBadge value={mission.data?.commDelayFormatted} />
@@ -277,7 +306,9 @@ function ShellContent({ children }: { children: ReactNode }) {
               </ol>
             </nav>
             <span className="text-xs text-slate-400">
-              {user!.username} · {user!.role.replaceAll('_', ' ')}
+              {DEMO_MODE
+                ? `${activeCrew?.name || 'Crew member'} · ${activeCrew?.role || 'Mission crew'}`
+                : `${user!.username} · ${user!.role.replaceAll('_', ' ')}`}
             </span>
           </div>
           <main id="main-content" tabIndex={-1}>

@@ -40,6 +40,13 @@ test('public mission: no login, all routes, local writes, simulation, reload and
     ).toBeVisible();
   }
   await page.goto('./');
+  await expect(
+    page.getByRole('heading', { name: 'Welcome aboard.', exact: true }),
+  ).toBeVisible();
+  await capture('00-crew-entry');
+  await page
+    .getByRole('button', { name: 'Enter mission →', exact: true })
+    .click();
   await expect(page.locator('.mission-hero')).toContainText('ARES I');
   await capture('01-mission-control');
   await nav('Crew Overview');
@@ -71,11 +78,9 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   );
   await capture('03-crew-profile');
   if (process.env.DEMO_SCREENSHOTS)
-    await page
-      .locator('.health-zone-layout')
-      .screenshot({
-        path: path.join(process.env.DEMO_SCREENSHOTS, '14-body-map.png'),
-      });
+    await page.locator('.health-zone-layout').screenshot({
+      path: path.join(process.env.DEMO_SCREENSHOTS, '14-body-map.png'),
+    });
   await page.reload();
   await expect(page.locator('.body-map')).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -225,5 +230,78 @@ test('public mission: no login, all routes, local writes, simulation, reload and
     ).toBe(true);
   }
   expect(apiRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('crew selection replaces the report, resets fields and keeps all sliders interactive', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('./daily-check/');
+  await page
+    .getByRole('button', { name: 'Enter mission →', exact: true })
+    .click();
+  const report = page.getByRole('heading', { name: /^Report for / });
+  await expect(report).toHaveText('Report for Elena Vasquez');
+  for (const label of ['Mood', 'Stress', 'Fatigue']) {
+    const slider = page.getByRole('slider', { name: label, exact: true });
+    const box = await slider.boundingBox();
+    if (!box) throw new Error('Slider is not visible');
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.85, box.y + box.height / 2, {
+      steps: 8,
+    });
+    await page.mouse.up();
+    const value = await slider.inputValue();
+    expect(Number(value), label + ' pointer drag').toBeGreaterThanOrEqual(8);
+    await expect(slider.locator('..').locator('output')).toContainText(value);
+  }
+  await page
+    .getByLabel('Notes', { exact: true })
+    .fill('This draft must not follow another crew member.');
+  await page
+    .getByLabel('Sleep in the last 24 hours', { exact: true })
+    .fill('8');
+  const names = [
+    'Elena Vasquez',
+    'Marcus Chen',
+    'Amara Okafor',
+    'Luca Moretti',
+    'Sofia Andersson',
+    'Noah Patel',
+  ];
+  for (const index of [1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0]) {
+    const id = '10000000-0000-4000-8000-' + String(index + 1).padStart(12, '0');
+    await page
+      .getByLabel('Active crew member', { exact: true })
+      .selectOption(id);
+    await expect(report).toHaveCount(1);
+    await expect(report).toHaveText('Report for ' + names[index]);
+    await expect(page.locator('form')).toHaveCount(1);
+    await expect(page.getByLabel('Mood', { exact: true })).toHaveValue('7');
+    await expect(page.getByLabel('Stress', { exact: true })).toHaveValue('4');
+    await expect(page.getByLabel('Fatigue', { exact: true })).toHaveValue('4');
+    await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('');
+    await expect(
+      page.getByLabel('Sleep in the last 24 hours', { exact: true }),
+    ).toHaveValue('');
+  }
+  await page.reload();
+  await expect(report).toHaveText('Report for Elena Vasquez');
+  await expect(
+    page.getByLabel('Active crew member', { exact: true }),
+  ).toHaveValue('10000000-0000-4000-8000-000000000001');
+  await page.goto(
+    './daily-check/?crewMemberId=10000000-0000-4000-8000-000000000002',
+  );
+  await expect(report).toHaveText('Report for Marcus Chen');
+  await page
+    .getByLabel('Active crew member', { exact: true })
+    .selectOption('10000000-0000-4000-8000-000000000003');
+  await expect(page).not.toHaveURL(/crewMemberId=/);
+  await expect(report).toHaveText('Report for Amara Okafor');
+  await expect(report).toHaveCount(1);
   expect(errors).toEqual([]);
 });

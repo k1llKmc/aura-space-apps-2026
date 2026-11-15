@@ -9,7 +9,10 @@ journal. The footer identifies the website as AI generated. Previous release:
 `demo-v1.0-stable`. Release architecture and recovery steps:
 [.ai_context/experience_v2.md](.ai_context/experience_v2.md).
 
-The public edition opens Mission Control directly, with a fictional Mars mission
+The public edition opens with a white AURA welcome screen and crew-profile
+selection, followed by Mission Control with the selected name in the header.
+Switching crew shows a short logo transition and resets the daily-report draft.
+It has a fictional Mars mission
 and six synthetic crew profiles. It needs no installation or login. Reports,
 warning reviews and reference edits stay in that browser. Reset demo restores
 the original scenario. This edition has no server persistence or real accounts;

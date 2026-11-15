@@ -10,3 +10,23 @@ export const demoUser = {
   missionId: 'aura-ares-01',
   crewMemberId: null,
 };
+export const demoRoster = demoCrewIds.map((id, i) => ({
+  id,
+  name: [
+    'Elena Vasquez',
+    'Marcus Chen',
+    'Amara Okafor',
+    'Luca Moretti',
+    'Sofia Andersson',
+    'Noah Patel',
+  ][i],
+  role: [
+    'Mission Commander',
+    'Flight Engineer',
+    'Medical Officer',
+    'Research Specialist',
+    'Systems Engineer',
+    'Pilot',
+  ][i],
+  photoUrl: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/crew/${i + 1}.jpg`,
+}));

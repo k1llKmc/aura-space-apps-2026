@@ -2,13 +2,15 @@
 import type { ReactNode } from 'react';
 import { SessionProvider, useSession } from './auth/session-provider';
 import { NotificationProvider } from './ui/notifications';
+import { CrewSessionProvider, useCrewSession } from './experience/crew-session';
 function ScopedNotifications({ children }: { children: ReactNode }) {
   const { user } = useSession();
+  const { crewId } = useCrewSession();
   return (
     <NotificationProvider
       key={
         user
-          ? `${user.id}/${user.role}/${user.missionId}/${user.crewMemberId}`
+          ? `${user.id}/${user.role}/${user.missionId}/${user.crewMemberId}/${crewId}`
           : 'guest'
       }
     >
@@ -19,7 +21,9 @@ function ScopedNotifications({ children }: { children: ReactNode }) {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
-      <ScopedNotifications>{children}</ScopedNotifications>
+      <CrewSessionProvider>
+        <ScopedNotifications>{children}</ScopedNotifications>
+      </CrewSessionProvider>
     </SessionProvider>
   );
 }

@@ -4,6 +4,7 @@ import { useExperience } from './use-experience';
 import { progress, asset } from './format';
 import { useWorkspace } from '@/components/shell/workspace-provider';
 import { portraitSource } from '@/demo/portrait-sources';
+import { useCrewSession } from './crew-session';
 export function ProgressBar({
   id,
   compact = false,
@@ -87,9 +88,10 @@ export function CrewHero({ id }: { id: string }) {
   );
 }
 export function TodaysMission() {
+  const crewSession = useCrewSession();
   const { roster } = useWorkspace(),
     { data } = useExperience(),
-    id = roster.data?.[0]?.id || '',
+    id = crewSession.crewId || roster.data?.[0]?.id || '',
     p = progress(data, id);
   const done = Number(p.checkedToday) + Number(p.memoryToday);
   return (

@@ -25,6 +25,7 @@ export function DailyCheckPage() {
   const query = useSearchParams();
   const { roster, selected, setSelected, invalidRequested } = useCrewSelection(
     query.get('crewMemberId'),
+    true,
   );
   const { notify } = useNotifications();
   const [draft, setDraft] = useState<DailyHealthCheckRequest>();
@@ -121,17 +122,29 @@ export function DailyCheckPage() {
       {!!roster.data?.length && (
         <div className="panel section-panel">
           <div className="form-width">
-            <CrewSelect
-              rows={roster.data}
-              value={selected}
-              onChange={(value) => {
-                setResult(undefined);
-                setDraft(undefined);
-                setError('');
-                request.current = null;
-                setSelected(value);
-              }}
-            />
+            {DEMO_MODE ? (
+              <div className="active-report-crew">
+                <p className="eyebrow">Your daily check-in</p>
+                <strong>{name}</strong>
+                <p className="muted text-sm">
+                  This report belongs to your selected crew profile. Change crew
+                  using the selector in the header.
+                </p>
+              </div>
+            ) : (
+              <CrewSelect
+                rows={roster.data}
+                value={selected}
+                disabled={busy}
+                onChange={(value) => {
+                  setResult(undefined);
+                  setDraft(undefined);
+                  setError('');
+                  request.current = null;
+                  setSelected(value);
+                }}
+              />
+            )}
             {invalidRequested && (
               <p role="alert" className="mt-3 text-amber-300">
                 The requested crew profile is unavailable to your account.
@@ -144,7 +157,7 @@ export function DailyCheckPage() {
       {selected && !result && (
         <form
           ref={form}
-          key={selected}
+          key={`report-${selected}`}
           onSubmit={review}
           className="panel section-panel space-y-6"
         >
@@ -206,7 +219,9 @@ export function DailyCheckPage() {
           </div>
         </form>
       )}
-      {DEMO_MODE && <MemoryCheck key={selected} crewId={selected} />}
+      {DEMO_MODE && (
+        <MemoryCheck key={`memory-${selected}`} crewId={selected} />
+      )}
       {result && (
         <section className="space-y-4">
           <div className="panel section-panel">
