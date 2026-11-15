@@ -107,7 +107,9 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
             </>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-xl text-white">{DEMO_MODE?'Clinical overview':profile.name}</h3>
+            <h3 className="text-xl text-white">
+              {DEMO_MODE ? 'Clinical overview' : profile.name}
+            </h3>
             <button
               onClick={refresh}
               className="rounded border border-slate-600 px-3 py-2 text-slate-200"
@@ -132,44 +134,47 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
               onSelect={setSelectedZone}
             />
             <div className="zone-card-grid">
-              {profile.zones.map((zone) => (
-                <ZoneStatusCard
-                  key={zone.zone}
-                  zone={zone}
-                  selected={selectedZone === zone.zone}
-                >
-                  <p className="text-sm text-slate-300">{zone.message}</p>
-                  <p className="text-xs text-slate-400">
-                    {zone.lastChecked
-                      ? new Date(zone.lastChecked).toLocaleString()
-                      : 'No measurement'}{' '}
-                    · {zone.sourceType?.replaceAll('_', ' ') || 'No source'}
-                  </p>
-                  {zone.evidence.map((item) => (
-                    <div
-                      key={item.metric}
-                      className="rounded bg-slate-800 p-3 text-sm text-slate-200"
-                    >
-                      <p>
-                        {friendly(item.metric)}: {item.current ?? 'Unavailable'}{' '}
-                        {item.unit} · reference {item.baseline}
-                      </p>
-                      <p className="mt-1 text-slate-400">{item.reason}</p>
-                    </div>
-                  ))}
-                  {zone.baselineId && (
-                    <details className="text-xs text-slate-400">
-                      <summary>Assessment reference</summary>
-                      <p className="break-all">
-                        Individual reference ·{' '}
-                        {zone.assessmentComplete
-                          ? 'Complete comparison'
-                          : 'Incomplete comparison'}
-                      </p>
-                    </details>
-                  )}
-                </ZoneStatusCard>
-              ))}
+              {profile.zones
+                .filter((zone) => !DEMO_MODE || zone.zone === selectedZone)
+                .map((zone) => (
+                  <ZoneStatusCard
+                    key={zone.zone}
+                    zone={zone}
+                    selected={selectedZone === zone.zone}
+                  >
+                    <p className="text-sm text-slate-300">{zone.message}</p>
+                    <p className="text-xs text-slate-400">
+                      {zone.lastChecked
+                        ? new Date(zone.lastChecked).toLocaleString()
+                        : 'No measurement'}{' '}
+                      · {zone.sourceType?.replaceAll('_', ' ') || 'No source'}
+                    </p>
+                    {zone.evidence.map((item) => (
+                      <div
+                        key={item.metric}
+                        className="rounded bg-slate-800 p-3 text-sm text-slate-200"
+                      >
+                        <p>
+                          {friendly(item.metric)}:{' '}
+                          {item.current ?? 'Unavailable'} {item.unit} ·
+                          reference {item.baseline}
+                        </p>
+                        <p className="mt-1 text-slate-400">{item.reason}</p>
+                      </div>
+                    ))}
+                    {zone.baselineId && (
+                      <details className="text-xs text-slate-400">
+                        <summary>Assessment reference</summary>
+                        <p className="break-all">
+                          Individual reference ·{' '}
+                          {zone.assessmentComplete
+                            ? 'Complete comparison'
+                            : 'Incomplete comparison'}
+                        </p>
+                      </details>
+                    )}
+                  </ZoneStatusCard>
+                ))}
             </div>
           </div>
         </>
@@ -195,8 +200,10 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
       )}
       {operator && <HealthEditors id={id} refresh={refresh} />}
       {records && (
-        <section className="space-y-3">
-          <h3 className="text-xl text-white">Measurement history</h3>
+        <details className="panel section-panel space-y-3" open={!DEMO_MODE}>
+          <summary className="text-lg">
+            Measurement history · {records.total} entries
+          </summary>
           {records.items.length === 0 && (
             <p className="text-slate-400">No medical records yet.</p>
           )}
@@ -225,11 +232,13 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
             change={setOffset}
             label="records"
           />
-        </section>
+        </details>
       )}
       {baselines && (
-        <section className="space-y-3">
-          <h3 className="text-xl text-white">Reference versions</h3>
+        <details className="panel section-panel space-y-3" open={!DEMO_MODE}>
+          <summary className="text-lg">
+            Reference policies · {baselines.total} versions
+          </summary>
           {baselines.items.length === 0 && (
             <p className="text-slate-400">No baseline rules configured.</p>
           )}
@@ -253,7 +262,7 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
             change={setBaselineOffset}
             label="references"
           />
-        </section>
+        </details>
       )}
       {DEMO_MODE && <MissionJournal crewId={id} />}
       {!DEMO_MODE && audit && (

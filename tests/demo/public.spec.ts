@@ -53,6 +53,11 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   await expect(
     page.getByRole('button', { name: /^Chest & cardiovascular\. Risk:/ }),
   ).toBeFocused();
+  await expect(page.locator('.zone-card-grid article')).toHaveCount(1);
+  await expect(page.locator('.zone-card-grid article')).toHaveAttribute(
+    'aria-label',
+    'Chest & cardiovascular',
+  );
   await capture('03-crew-profile');
   await page.reload();
   await expect(page.locator('.body-map')).toBeVisible();
