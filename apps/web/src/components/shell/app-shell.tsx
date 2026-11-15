@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSession } from '@/components/auth/session-provider';
 import { LoginScreen } from '@/components/auth/login-screen';
 import { Badge, Button, ErrorState, Modal } from '@/components/ui/ui';
+import { CommDelayBadge } from '@/components/ui/aura';
 import { useNotifications } from '@/components/ui/notifications';
 import { WorkspaceProvider, useWorkspace } from './workspace-provider';
 
@@ -104,7 +105,10 @@ function ShellContent({ children }: { children: ReactNode }) {
     if (!alerts.data) return;
     if (seen.current)
       for (const alert of alerts.data.items)
-        if (!seen.current.has(alert.id) && Date.parse(alert.createdAt) > newestWarning.current)
+        if (
+          !seen.current.has(alert.id) &&
+          Date.parse(alert.createdAt) > newestWarning.current
+        )
           notices.notify(
             `New warning: ${alert.title}`,
             alert.severity === 'CRITICAL' ? 'error' : 'info',
@@ -113,7 +117,10 @@ function ShellContent({ children }: { children: ReactNode }) {
       ...(seen.current || []),
       ...alerts.data.items.map((alert) => alert.id),
     ]);
-    newestWarning.current = Math.max(newestWarning.current, ...alerts.data.items.map((alert) => Date.parse(alert.createdAt)));
+    newestWarning.current = Math.max(
+      newestWarning.current,
+      ...alerts.data.items.map((alert) => Date.parse(alert.createdAt)),
+    );
     // Notice state updates must not rescan already seen warnings.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alerts.data]);
@@ -182,11 +189,7 @@ function ShellContent({ children }: { children: ReactNode }) {
           </div>
           <div className="topbar-actions">
             <div className="comm-delay" title="Mission communication delay">
-              <span aria-hidden="true">◷</span>
-              <span>
-                Comm delay{' '}
-                <strong>{mission.data?.commDelayFormatted || '—'}</strong>
-              </span>
+              <CommDelayBadge value={mission.data?.commDelayFormatted} />
             </div>
             {mission.data && (
               <span className="topbar-environment">
@@ -204,7 +207,18 @@ function ShellContent({ children }: { children: ReactNode }) {
               }}
               className="notification-button"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M9 21h6" /></svg>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+                <path d="M9 21h6" />
+              </svg>
               <span className="notification-count">
                 {alerts.data?.total ?? '…'}
               </span>
@@ -259,7 +273,12 @@ function ShellContent({ children }: { children: ReactNode }) {
               <ErrorState message={alerts.error} retry={alerts.refresh} />
             )}
             {alerts.data?.items.map((alert) => (
-              <Link className="notification-item" href="/alerts" key={alert.id} onClick={() => setNotifications(false)}>
+              <Link
+                className="notification-item"
+                href="/alerts"
+                key={alert.id}
+                onClick={() => setNotifications(false)}
+              >
                 <Badge value={alert.severity} />
                 <span>{alert.title}</span>
               </Link>

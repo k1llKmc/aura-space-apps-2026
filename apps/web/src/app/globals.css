@@ -1,12 +1,186 @@
 @import 'tailwindcss';
 
+.health-zone-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.zone-card-grid {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.body-map-panel {
+  padding: var(--space-6);
+  position: sticky;
+  top: 24px;
+}
+.body-map-panel h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+.body-map {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 24px auto;
+  overflow: visible;
+}
+.body-map-zone {
+  fill: #26374e;
+  stroke: #95a9c2;
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+.body-map-zone[data-risk='NOMINAL'] {
+  fill: #123e47;
+  stroke: #6ee7ff;
+}
+.body-map-zone[data-risk='ATTENTION'] {
+  fill: #49381a;
+  stroke: #fcd077;
+}
+.body-map-zone[data-risk='CRITICAL'] {
+  fill: #4a2330;
+  stroke: #ff9aab;
+}
+.body-map-zone[data-selected='true'] {
+  stroke-width: 4;
+  stroke-dasharray: 5 2;
+}
+.body-map-zone:hover {
+  filter: brightness(1.4);
+}
+.body-map-zone:focus-visible {
+  outline: none;
+  stroke: white;
+  stroke-width: 5;
+}
+.body-map-selection {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.zone-status-card {
+  padding: var(--space-6);
+  scroll-margin-top: 24px;
+  border-radius: var(--radius-card);
+}
+.zone-status-card.is-selected {
+  border-color: var(--telemetry);
+  box-shadow: inset 3px 0 var(--telemetry);
+}
+.freshness-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #526176;
+  color: var(--stale);
+  background: #182334;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.freshness-badge[data-state='CURRENT'] {
+  color: var(--telemetry);
+  border-color: #326675;
+  background: #102e3c;
+}
+.comm-delay-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--telemetry);
+  font-variant-numeric: tabular-nums;
+}
+.crew-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: var(--space-4);
+}
+.crew-card {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.crew-card h2 {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.crew-card > a {
+  grid-column: 2;
+  min-height: var(--control-height);
+  display: flex;
+  align-items: center;
+}
+.alert-card {
+  padding: var(--space-6);
+  border-inline-start: 3px solid var(--stale);
+}
+.alert-card[data-severity='ATTENTION'] {
+  border-inline-start-color: var(--attention);
+}
+.alert-card[data-severity='CRITICAL'] {
+  border-inline-start-color: var(--critical);
+}
+@media (min-width: 1700px) {
+  .zone-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1100px) {
+  .health-zone-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body-map-panel {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 16px;
+  }
+  .body-map {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    margin: 0;
+  }
+}
+@media (max-width: 560px) {
+  .body-map-panel {
+    display: block;
+  }
+  .body-map {
+    max-width: 180px;
+    margin: 20px auto;
+  }
+  .zone-status-card {
+    padding: 16px;
+  }
+}
+
 :root {
   color-scheme: dark;
   --bg: #070e1a;
   --panel: #101c2e;
   --line: #26374e;
   --muted: #95a9c2;
-  --accent: #7debd1;
+  --accent: #6ee7ff;
+  --telemetry: #6ee7ff;
+  --attention: #fcd077;
+  --critical: #ff9aab;
+  --stale: #a9b6c8;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-card: 14px;
+  --control-height: 44px;
 }
 * {
   box-sizing: border-box;
@@ -225,8 +399,6 @@ fieldset:disabled {
   border-color: #783448;
 }
 .badge-attention,
-.badge-stale,
-.badge-outdated,
 .badge-pending {
   color: #f5d591;
   background: #3b3220;
@@ -240,6 +412,8 @@ fieldset:disabled {
   background: #133739;
   border-color: #285a60;
 }
+.badge-stale,
+.badge-outdated,
 .badge-missing,
 .badge-unknown {
   color: #a0b0c5;

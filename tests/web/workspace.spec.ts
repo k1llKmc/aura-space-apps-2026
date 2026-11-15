@@ -73,6 +73,25 @@ test('complete workspace: routes, forms, reviews, projections, access, mobile na
   await expect(
     page.getByRole('navigation', { name: 'Breadcrumb' }),
   ).toContainText('Crew Profile');
+  const headZone = page.getByRole('button', { name: /^Head & eyes\. Risk:/ });
+  await headZone.focus();
+  await page.keyboard.press('ArrowRight');
+  const chestZone = page.getByRole('button', {
+    name: /^Chest & cardiovascular\. Risk:/,
+  });
+  await expect(chestZone).toBeFocused();
+  await expect(chestZone).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('End');
+  await expect(
+    page.getByRole('button', { name: /^Whole body & immune\. Risk:/ }),
+  ).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await navigate(page, 'Daily Health Check');
   await page
     .getByLabel('Crew member', { exact: true })

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useWorkspace } from '@/components/shell/workspace-provider';
+import { CrewCard } from '@/components/ui/aura';
 import {
   Button,
   DataTable,
@@ -59,6 +60,14 @@ export function CrewOverview() {
           </p>
           {rows.length ? (
             <>
+              <div
+                className="crew-card-grid"
+                aria-label="Crew profile shortcuts"
+              >
+                {rows.slice(offset, offset + 20).map((member) => (
+                  <CrewCard key={member.id} member={member} />
+                ))}
+              </div>
               <DataTable
                 caption="Accessible crew roster"
                 rows={rows.slice(offset, offset + 20)}

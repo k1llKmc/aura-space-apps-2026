@@ -11,6 +11,8 @@ import type {
 } from '@aura/shared-types';
 import { apiClient } from '@/services/api/client';
 import { HealthEditors } from './health-editors';
+import { BodyMap } from './body-map';
+import { AlertCard, ZoneStatusCard } from '@/components/ui/aura';
 const zoneLabels: Record<string, string> = {
   HEAD_EYES: 'Head & eyes',
   CHEST_CARDIO: 'Chest & cardiovascular',
@@ -18,16 +20,8 @@ const zoneLabels: Record<string, string> = {
   WHOLE_BODY_IMMUNE: 'Whole body & immune',
   SKELETON_MUSCLES: 'Skeleton & muscles',
 };
-const colors: Record<string, string> = {
-  NOMINAL: 'text-emerald-300',
-  ATTENTION: 'text-amber-300',
-  CRITICAL: 'text-red-300',
-  UNKNOWN: 'text-slate-300',
-  CURRENT: 'text-cyan-300',
-  STALE: 'text-amber-300',
-  MISSING: 'text-slate-400',
-};
 export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
+  const [selectedZone, setSelectedZone] = useState('HEAD_EYES');
   const [profile, setProfile] = useState<CrewHealthResponse>();
   const [records, setRecords] = useState<ListResponse<HealthRecordResponse>>();
   const [audit, setAudit] = useState<ListResponse<AuditEventResponse>>();
@@ -120,55 +114,52 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
               Some zones need updated measurements.
             </p>
           )}
-          <div className="grid gap-4 md:grid-cols-2">
-            {profile.zones.map((zone) => (
-              <article
-                key={zone.zone}
-                className="space-y-3 rounded-xl border border-slate-700 bg-slate-900 p-5"
-              >
-                <h4 className="text-lg font-medium text-white">
-                  {zoneLabels[zone.zone]}
-                </h4>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <span className={colors[zone.riskStatus || 'UNKNOWN']}>
-                    Risk: {zone.riskStatus || 'Not assessed'}
-                  </span>
-                  <span className={colors[zone.dataState]}>
-                    Data: {zone.dataState}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-300">{zone.message}</p>
-                <p className="text-xs text-slate-400">
-                  {zone.lastChecked
-                    ? new Date(zone.lastChecked).toLocaleString()
-                    : 'No measurement'}{' '}
-                  · {zone.sourceType?.replaceAll('_', ' ') || 'No source'}
-                </p>
-                {zone.evidence.map((item) => (
-                  <div
-                    key={item.metric}
-                    className="rounded bg-slate-800 p-3 text-sm text-slate-200"
-                  >
-                    <p>
-                      {item.metric}: {item.current ?? 'Unavailable'} {item.unit}{' '}
-                      · reference {item.baseline}
-                    </p>
-                    <p className="mt-1 text-slate-400">{item.reason}</p>
-                  </div>
-                ))}
-                {zone.baselineId && (
-                  <details className="text-xs text-slate-400">
-                    <summary>Assessment reference</summary>
-                    <p className="break-all">
-                      Baseline {zone.baselineId} · {zone.rulesVersion} ·{' '}
-                      {zone.assessmentComplete
-                        ? 'Complete comparison'
-                        : 'Incomplete comparison'}
-                    </p>
-                  </details>
-                )}
-              </article>
-            ))}
+          <div className="health-zone-layout">
+            <BodyMap
+              zones={profile.zones}
+              selected={selectedZone}
+              onSelect={setSelectedZone}
+            />
+            <div className="zone-card-grid">
+              {profile.zones.map((zone) => (
+                <ZoneStatusCard
+                  key={zone.zone}
+                  zone={zone}
+                  selected={selectedZone === zone.zone}
+                >
+                  <p className="text-sm text-slate-300">{zone.message}</p>
+                  <p className="text-xs text-slate-400">
+                    {zone.lastChecked
+                      ? new Date(zone.lastChecked).toLocaleString()
+                      : 'No measurement'}{' '}
+                    · {zone.sourceType?.replaceAll('_', ' ') || 'No source'}
+                  </p>
+                  {zone.evidence.map((item) => (
+                    <div
+                      key={item.metric}
+                      className="rounded bg-slate-800 p-3 text-sm text-slate-200"
+                    >
+                      <p>
+                        {item.metric}: {item.current ?? 'Unavailable'}{' '}
+                        {item.unit} · reference {item.baseline}
+                      </p>
+                      <p className="mt-1 text-slate-400">{item.reason}</p>
+                    </div>
+                  ))}
+                  {zone.baselineId && (
+                    <details className="text-xs text-slate-400">
+                      <summary>Assessment reference</summary>
+                      <p className="break-all">
+                        Baseline {zone.baselineId} · {zone.rulesVersion} ·{' '}
+                        {zone.assessmentComplete
+                          ? 'Complete comparison'
+                          : 'Incomplete comparison'}
+                      </p>
+                    </details>
+                  )}
+                </ZoneStatusCard>
+              ))}
+            </div>
           </div>
         </>
       )}
@@ -179,14 +170,9 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
             <p className="text-slate-400">No active profile warnings.</p>
           )}
           {alerts.items.map((alert) => (
-            <article
-              key={alert.id}
-              className="rounded-lg border border-slate-700 bg-slate-900 p-4"
-            >
-              <h4 className="font-medium text-white">{alert.title}</h4>
-              <p className="mt-2 text-sm text-slate-300">{alert.message}</p>
+            <AlertCard key={alert.id} alert={alert}>
               {operator && <ResolveAlert id={alert.id} refresh={refresh} />}
-            </article>
+            </AlertCard>
           ))}
           <Pager
             offset={alertOffset}
