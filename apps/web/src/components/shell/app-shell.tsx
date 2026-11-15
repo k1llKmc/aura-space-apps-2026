@@ -284,7 +284,7 @@ function ShellContent({ children }: { children: ReactNode }) {
             {children}
           </main>
           <footer className="workspace-footer">
-            AURA · Onboard mission workspace
+            AURA · Onboard mission workspace · AI generated
             <span>Risk and data freshness are assessed separately.</span>
           </footer>
         </div>
