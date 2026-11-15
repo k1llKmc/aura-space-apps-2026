@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { STATUS_CODES } from 'node:http';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -20,7 +21,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     response.status(statusCode).json({
       statusCode,
-      error: HttpStatus[statusCode] ?? 'Error',
+      error: STATUS_CODES[statusCode] ?? 'Error',
       message: Array.isArray(message) ? message : [message],
       timestamp: new Date().toISOString(),
     });

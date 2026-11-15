@@ -59,6 +59,7 @@ model CrewMember {
   lastSyncedAt DateTime @default(now())
   baselines IndividualBaseline[]
   healthRecords HealthRecord[]
+  dailyChecks DailyHealthCheck[]
   alerts Alert[]
   @@index([missionId])
 }
@@ -83,6 +84,21 @@ model HealthRecord {
   recordedAt DateTime @default(now())
   @@index([crewMemberId, recordedAt])
 }
+model DailyHealthCheck {
+  id String @id @default(uuid())
+  crewMemberId String
+  crewMember CrewMember @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  checkDate String
+  idempotencyKey String
+  payload Json
+  response Json
+  xpEarned Int
+  currentStreak Int
+  recordedAt DateTime @default(now())
+  @@unique([crewMemberId, checkDate])
+  @@unique([crewMemberId, idempotencyKey])
+}
+
 model EnvironmentRecord {
   id String @id @default(uuid())
   missionId String

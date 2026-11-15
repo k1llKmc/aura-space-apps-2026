@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { z } from 'zod';
 import { AppModule } from './app.module';
@@ -11,7 +11,6 @@ async function bootstrap(): Promise<void> {
   const environment = environmentSchema.parse(process.env);
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(environment.API_PORT, '0.0.0.0');
   new Logger('Bootstrap').log(`AURA API listening on port ${environment.API_PORT}`);
