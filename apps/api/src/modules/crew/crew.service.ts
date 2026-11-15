@@ -4,10 +4,21 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CrewHealthResponse, DailyHealthCheckRequest, DailyHealthCheckResponse } from './crew.contracts';
 import { bodyZones, overallStatus, streakForDate, zoneHealth } from './crew.health';
+import type { AuthUser, CrewSummary, ListResponse } from '@aura/shared-types';
 
 @Injectable()
 export class CrewService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async list(actor: AuthUser, page: { offset: number; limit: number }): Promise<ListResponse<CrewSummary>> {
+    const where = { missionId: actor.missionId, ...(actor.role === 'CREW_MEMBER' ? { id: actor.crewMemberId! } : {}) };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.crewMember.findMany({ where, select: { id: true, name: true, role: true, photoUrl: true },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }], skip: page.offset, take: page.limit }),
+      this.prisma.crewMember.count({ where }),
+    ]);
+    return { items, total, ...page };
+  }
 
   async getHealth(id: string): Promise<CrewHealthResponse> {
     const now = new Date();

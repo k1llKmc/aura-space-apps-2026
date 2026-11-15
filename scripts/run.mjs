@@ -1,4 +1,5 @@
-import { existsSync, copyFileSync } from 'node:fs';
+import { existsSync, copyFileSync, appendFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -7,6 +8,13 @@ process.chdir(root);
 if (!existsSync('.env')) copyFileSync('.env.example', '.env');
 process.loadEnvFile('.env');
 const env = process.env;
+// Generate local secrets once. Never print them or commit the root .env.
+for (const key of ['JWT_SECRET', 'AUTH_BOOTSTRAP_PASSWORD']) {
+  if (!env[key]) {
+    env[key] = randomBytes(32).toString('hex');
+    appendFileSync('.env', `\n${key}=${env[key]}\n`);
+  }
+}
 env.DATABASE_URL ||= `postgresql://${encodeURIComponent(env.POSTGRES_USER || 'aura')}:${encodeURIComponent(env.POSTGRES_PASSWORD || 'aura_local_password')}@${env.POSTGRES_HOST || '127.0.0.1'}:${env.POSTGRES_PORT || '5432'}/${encodeURIComponent(env.POSTGRES_DB || 'aura')}?schema=public`;
 env.DIRECT_URL ||= env.DATABASE_URL;
 env.REDIS_URL ||= `redis://${env.REDIS_HOST || '127.0.0.1'}:${env.REDIS_PORT || '6379'}`;
@@ -21,11 +29,17 @@ function launch(command, args) {
 }
 function node(script, args = []) { return launch(process.execPath, [path.join(root, script), ...args]); }
 const mode = process.argv[2];
-if (mode === 'api' || mode === 'bootstrap') {
+if (mode === 'ci-test') {
+  env.AURA_TEST_DATABASE_URL = env.DATABASE_URL;
+  launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs'])
+    .on('exit', (code) => { process.exitCode = code ?? 1; });
+} else if (mode === 'api' || mode === 'bootstrap') {
   node(mode === 'api' ? 'apps/api/dist/main.js' : 'scripts/bootstrap.cjs').on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'up') {
   launch('docker', ['compose', 'up', '--build', '-d', '--wait']).on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'dev') {
+  const shared = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'packages/shared-types/tsconfig.json'], { stdio: 'inherit', env });
+  if (shared.status !== 0) process.exit(shared.status ?? 1);
   // Nest DI requires tsc decorator metadata, which tsx/esbuild does not emit.
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'apps/api/tsconfig.json'], { stdio: 'inherit', env });
   if (build.status !== 0) process.exit(build.status ?? 1);
@@ -45,6 +59,10 @@ if (mode === 'api' || mode === 'bootstrap') {
     'web-build': ['node_modules/next/dist/bin/next', 'build', 'apps/web'],
   };
   const args = commands[mode];
+  if (mode === 'web-build') {
+    const built = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'packages/shared-types/tsconfig.json'], { stdio: 'inherit', env });
+    if (built.status !== 0) process.exit(built.status ?? 1);
+  }
   if (!args) throw new Error(`Unknown command: ${mode}`);
   if (['generate', 'migrate'].includes(mode)) args.push('--schema', 'apps/api/prisma/schema.prisma');
   node(args[0], args.slice(1)).on('exit', (code) => { process.exitCode = code ?? 1; });

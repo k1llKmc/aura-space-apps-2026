@@ -1,7 +1,7 @@
 # Backend contracts — crew health, revision 1
 
 Status: crew endpoints, validation and daily-check persistence implemented.
-Authentication and clinical assessment remain future work. This document refines tech_spec.md sections
+JWT authentication and role/mission access are implemented; clinical assessment remains future work. This document refines tech_spec.md sections
 4.2–4.3; in a conflict, this revision governs those endpoints.
 
 ## Common conventions
@@ -9,11 +9,10 @@ Authentication and clinical assessment remain future work. This document refines
 - Base path: `/api/v1`. JSON request/response, UTF-8.
 - IDs: UUID strings. Timestamps: ISO 8601 UTC, serialized with `Z`.
 - Unknown request fields are rejected, numbers are not coerced from strings.
-- Authentication target: onboard JWT. Commander and medical roles may access crew
+- Authentication: onboard JWT. Commander and medical roles may access crew
   within their mission; crew may access their own profile/checks. Missing or invalid
-  JWT returns 401; forbidden actions return 403. Role names and identity storage
-  will be implemented in the authentication iteration; endpoints must not be
-  described as protected until guards exist.
+  JWT returns 401; forbidden actions return 403. See auth_contracts.md for login,
+  identity storage, permissions and additional endpoints.
 - Errors: `{ statusCode: number, error: string, message: string[], timestamp: string }`.
   `error` uses HTTP reason phrases, e.g. `Bad Request`, not `BAD_REQUEST`.
 - 400: invalid payload/UUID; 404: unknown crew member within authorized scope;
@@ -92,9 +91,9 @@ the same date returns 409 without a write or reward. No client timestamp/backdat
 
 Same key + same normalized payload returns 200 with the original success body;
 same key + different normalized payload returns 409. Comparison includes crew ID.
-In this iteration keys are scoped to crewMemberId and this endpoint; authentication
-is not yet available. Before deployment, add identity/mission guards and enforce
-authorization before replay; never treat a crew UUID as proof of permission.
+Keys are scoped to crewMemberId and this endpoint. JWT verification and mission/profile
+authorization run before replay. Authorized Commander/Medical Officer may replay
+the same operation for their mission; a Crew Member cannot replay another profile's check.
 Retain keys with the check for the lifetime of the
 check; a replay returns the original recordedAt, streak and XP, without awarding
 XP again. The response xpEarned describes that original operation.

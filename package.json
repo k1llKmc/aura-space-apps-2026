@@ -1,14 +1,14 @@
 {
   "name": "aura-space-apps-2026",
   "private": true,
-  "workspaces": ["apps/api", "apps/web"],
+  "workspaces": ["apps/api", "apps/web", "packages/shared-types"],
   "scripts": {
     "start": "node scripts/run.mjs up",
     "dev": "node scripts/run.mjs dev",
     "db:generate": "node scripts/run.mjs generate",
     "db:migrate": "node scripts/run.mjs migrate",
     "db:seed": "node scripts/run.mjs seed",
-    "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:setup": "node scripts/run.mjs bootstrap",
     "db:smoke": "node scripts/run.mjs smoke",
     "web:build": "node scripts/run.mjs web-build",
     "web:dev": "node scripts/run.mjs dev"

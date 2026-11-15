@@ -1,5 +1,6 @@
 import { AlertSeverity, BodyZone, HealthRecord } from '@prisma/client';
 import type { HealthZoneStatus } from './crew.contracts';
+import { aggregateStatus } from '@aura/shared-types';
 
 export const bodyZones = [BodyZone.HEAD_EYES, BodyZone.CHEST_CARDIO,
   BodyZone.ABDOMEN_METABOLISM, BodyZone.WHOLE_BODY_IMMUNE, BodyZone.SKELETON_MUSCLES];
@@ -21,10 +22,7 @@ export function zoneHealth(zone: BodyZone, record: HealthRecord | undefined, now
 }
 
 export function overallStatus(statuses: AlertSeverity[]): AlertSeverity {
-  for (const severity of [AlertSeverity.CRITICAL, AlertSeverity.ATTENTION, AlertSeverity.OUTDATED]) {
-    if (statuses.includes(severity)) return severity;
-  }
-  return AlertSeverity.NOMINAL;
+  return aggregateStatus(statuses);
 }
 
 export function streakForDate(checkDate: string, previousDates: string[]): number {

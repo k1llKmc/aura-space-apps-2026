@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/shared-types packages/shared-types
 RUN npm ci
 COPY apps/web apps/web
 ENV API_PROXY_TARGET=http://api:3001

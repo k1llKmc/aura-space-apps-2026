@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { z } from 'zod';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import type { Request, Response, NextFunction } from 'express';
 
 const environmentSchema = z.object({ API_PORT: z.coerce.number().int().min(1).max(65535).default(3001) });
 
@@ -12,6 +13,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(environment.API_PORT, '0.0.0.0');
   new Logger('Bootstrap').log(`AURA API listening on port ${environment.API_PORT}`);

@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test": "npm run build && node --test test/*.test.cjs",
-    "build": "tsc -p tsconfig.json",
+    "build": "npm --workspace @aura/shared-types run build && tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "start:dev": "node ../../scripts/run.mjs dev",
     "prisma:generate": "prisma generate",
@@ -12,6 +12,8 @@
     "prisma:smoke": "tsx prisma/smoke.ts"
   },
   "dependencies": {
+    "@aura/shared-types": "1.0.0",
+    "@nestjs/jwt": "^11.0.0",
     "@nestjs/common": "^11.1.12",
     "@nestjs/core": "^11.1.12",
     "@nestjs/platform-express": "^11.1.12",

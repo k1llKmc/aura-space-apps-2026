@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AlertSeverity, HazardType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { MissionStatusResponse } from './mission.types';
+import { statusPriority, aggregateStatus } from '@aura/shared-types';
 
 const hazardKeys: Record<HazardType, keyof MissionStatusResponse['hazardsStatus']> = {
   SPACE_RADIATION: 'spaceRadiation',
@@ -10,15 +11,15 @@ const hazardKeys: Record<HazardType, keyof MissionStatusResponse['hazardsStatus'
   DISTANCE_FROM_EARTH: 'distanceFromEarth',
   HOSTILE_ENVIRONMENT: 'hostileEnvironment',
 };
-const severityWeight: Record<AlertSeverity, number> = { NOMINAL: 0, ATTENTION: 1, OUTDATED: 2, CRITICAL: 3 };
+const severityWeight = statusPriority;
 
 @Injectable()
 export class MissionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getCurrentStatus(): Promise<MissionStatusResponse> {
+  async getCurrentStatus(missionId: string): Promise<MissionStatusResponse> {
     const mission = await this.prisma.mission.findFirst({
-      where: { isCurrent: true },
+      where: { id: missionId },
       include: {
         environmentLogs: { orderBy: { recordedAt: 'desc' }, take: 1 },
         alerts: { where: { isResolved: false }, select: { hazardType: true, severity: true } },
@@ -35,7 +36,7 @@ export class MissionService {
       const key = hazardKeys[alert.hazardType];
       if (severityWeight[alert.severity] > severityWeight[hazardsStatus[key]]) hazardsStatus[key] = alert.severity;
     }
-    const environmentStatus = hazardsStatus.spaceRadiation;
+    const environmentStatus = aggregateStatus([hazardsStatus.spaceRadiation, hazardsStatus.hostileEnvironment]);
     return {
       missionId: mission.id, name: mission.name, destination: mission.destination, phase: mission.phase,
       missionDay: mission.missionDay, commDelaySeconds: mission.commDelaySeconds,

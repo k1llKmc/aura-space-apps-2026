@@ -28,7 +28,7 @@ npm start
 ```
 
 `down` preserves the database. Do not add `-v` unless you intend to delete it.
-The bundled stack binds ports to localhost; authentication is not implemented yet.
+The bundled stack binds ports to localhost; business endpoints require a Bearer JWT.
 
 ## Shared environment
 
@@ -58,7 +58,7 @@ npm run db:setup
 npm run dev
 ```
 
-`db:setup` explicitly migrates and seeds (for development only). `dev` builds API
+`db:setup` migrates, seeds an empty database and provisions the first account. `dev` builds API
 with TypeScript decorator metadata, watches/restarts API and starts Next.js with
 hot reload. Ctrl+C stops the processes. Run `docker compose down` after finishing.
 If the full stack is already running, stop its api/web containers before starting
@@ -83,7 +83,29 @@ Tests create/delete their own fixture; never use a production database.
   201 on creation, 200 on replay, 409 on conflict.
 
 Contracts: [.ai_context/backend_contracts.md](.ai_context/backend_contracts.md).
-Clinical risk thresholds and JWT/mission access guards remain future work.
+Clinical risk thresholds remain future work. JWT and mission access guards are enabled.
+
+## Login and access
+
+First launch generates JWT_SECRET and AUTH_BOOTSTRAP_PASSWORD in root `.env`.
+Open the site and sign in with AUTH_BOOTSTRAP_USERNAME (default `commander`) and
+that password. Keep `.env` private. Existing accounts are not reset on restart;
+changing AUTH_BOOTSTRAP_PASSWORD after provisioning does not change a stored password.
+
+Commander can provision mission accounts using POST `/api/v1/auth/users`.
+Passwords must contain 12–128 characters. Crew Member accounts require a linked
+crew profile. Users cannot choose an arbitrary mission at login or account creation.
+Tokens expire after 15 minutes. The frontend keeps them only in memory, so reload
+requires login. Logout revokes all tokens for that account. There is no refresh-token
+or password-recovery flow in this iteration. Login limiting is in-memory per API
+instance; this stack uses one API node.
+
+New API contracts and the permissions table are documented in
+[.ai_context/auth_contracts.md](.ai_context/auth_contracts.md). Shared request/response
+types and status aggregation live in `packages/shared-types`.
+
+`GET /api/v1/health` is the only public readiness endpoint; it returns no mission
+or medical data. Docker health checks use it. The mission endpoint now requires login.
 
 ## Verification limits
 

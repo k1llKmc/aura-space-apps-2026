@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { STATUS_CODES } from 'node:http';
+import type { ApiErrorResponse } from '@aura/shared-types';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -19,11 +20,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (!isHttpException) this.logger.error(`Unhandled error for ${request.method} ${request.url}`, exception instanceof Error ? exception.stack : undefined);
 
-    response.status(statusCode).json({
+    const envelope: ApiErrorResponse = {
       statusCode,
       error: STATUS_CODES[statusCode] ?? 'Error',
       message: Array.isArray(message) ? message : [message],
       timestamp: new Date().toISOString(),
-    });
+    };
+    response.status(statusCode).json(envelope);
   }
 }

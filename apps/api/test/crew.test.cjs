@@ -6,6 +6,7 @@ const { Module } = require('@nestjs/common');
 const { NestFactory } = require('@nestjs/core');
 const { CrewController } = require('../dist/modules/crew/crew.controller');
 const { CrewService } = require('../dist/modules/crew/crew.service');
+const { AuthService } = require('../dist/modules/auth/auth.service');
 const { HttpExceptionFilter } = require('../dist/common/filters/http-exception.filter');
 const { dailyHealthCheckSchema } = require('../dist/modules/crew/crew.contracts');
 const { zoneHealth, overallStatus, streakForDate } = require('../dist/modules/crew/crew.health');
@@ -98,7 +99,8 @@ test('daily check replay persists original response and never repeats XP or diag
 test('HTTP routing, validation, error envelope, initial 201 and replay 200', async () => {
   const { service } = memoryService();
   class TestModule {}
-  Module({ controllers: [CrewController], providers: [{ provide: CrewService, useValue: service }] })(TestModule);
+  Module({ controllers: [CrewController], providers: [{ provide: CrewService, useValue: service },
+    { provide: AuthService, useValue: { requireCrew: async () => {} } }] })(TestModule);
   const app = await NestFactory.create(TestModule, { logger: false });
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());

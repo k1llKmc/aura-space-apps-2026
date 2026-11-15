@@ -33,6 +33,28 @@ enum BodyZone {
   SKELETON_MUSCLES
 }
 
+enum UserRole {
+  COMMANDER
+  MEDICAL_OFFICER
+  CREW_MEMBER
+}
+
+model User {
+  id String @id @default(uuid())
+  username String @unique
+  passwordHash String
+  role UserRole
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  crewMemberId String?
+  crewMember CrewMember? @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  tokenVersion Int @default(0)
+  disabled Boolean @default(false)
+  createdAt DateTime @default(now())
+  resolvedAlerts Alert[]
+  @@index([missionId])
+}
+
 model Mission {
   id String @id @default(uuid())
   name String @unique
@@ -46,6 +68,7 @@ model Mission {
   crewMembers CrewMember[]
   environmentLogs EnvironmentRecord[]
   alerts Alert[]
+  users User[]
 }
 model CrewMember {
   id String @id @default(uuid())
@@ -60,6 +83,7 @@ model CrewMember {
   baselines IndividualBaseline[]
   healthRecords HealthRecord[]
   dailyChecks DailyHealthCheck[]
+  users User[]
   alerts Alert[]
   @@index([missionId])
 }
@@ -124,6 +148,10 @@ model Alert {
   title String
   message String
   isResolved Boolean @default(false)
+  resolvedAt DateTime?
+  resolvedById String?
+  resolvedBy User? @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolutionNote String?
   createdAt DateTime @default(now())
   @@index([missionId, severity])
 }

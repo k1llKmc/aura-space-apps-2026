@@ -3,11 +3,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm --workspace @aura/shared-types run build && next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@aura/shared-types": "1.0.0",
     "axios": "^1.8.4",
     "next": "^15.2.4",
     "react": "^19.0.0",
