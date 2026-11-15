@@ -1,0 +1,35 @@
+name: Verify experience preview
+on:
+  push:
+    branches: [feat/mission-experience-v2]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run web:build
+        env:
+          NEXT_PUBLIC_DEMO_MODE: 'true'
+          NEXT_PUBLIC_BASE_PATH: /aura-space-apps-2026
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.demo.config.ts
+        env:
+          DEMO_SCREENSHOTS: preview-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: experience-preview-screenshots
+          path: preview-screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: experience-preview-site
+          path: apps/web/out

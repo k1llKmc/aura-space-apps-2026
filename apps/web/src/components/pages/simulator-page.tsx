@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/ui';
 import { apiClient } from '@/services/api/client';
 import { CrewSelect, useCrewSelection } from './crew-selection';
+import { friendly } from '@/components/experience/format';
 type ProjectionResult = Pick<
   HealthZoneStatus,
   'riskStatus' | 'assessmentComplete' | 'evidence'
@@ -187,7 +188,7 @@ export function SimulatorPage() {
                     >
                       {Object.values(BodyZone).map((value) => (
                         <option key={value} value={value}>
-                          {value.replaceAll('_', ' ')}
+                          {friendly(value)}
                         </option>
                       ))}
                     </select>
@@ -196,7 +197,9 @@ export function SimulatorPage() {
                     Assumed source
                     <select name="sourceType" aria-label="Assumed source">
                       {Object.values(DataSourceType).map((source) => (
-                        <option key={source}>{source}</option>
+                        <option key={source} value={source}>
+                          {friendly(source)}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -205,7 +208,7 @@ export function SimulatorPage() {
                   {Object.entries(zoneMetricCatalog[zone]).map(
                     ([key, unit]) => (
                       <label key={key}>
-                        {key} ({unit})
+                        {friendly(key)} ({unit})
                         <input type="number" step="any" name={key} />
                       </label>
                     ),
@@ -276,7 +279,8 @@ export function SimulatorPage() {
                         {
                           key: 'metric',
                           label: 'Metric',
-                          render: (item) => `${item.metric} (${item.unit})`,
+                          render: (item) =>
+                            `${friendly(item.metric)} (${item.unit})`,
                         },
                         {
                           key: 'current',
@@ -304,7 +308,7 @@ export function SimulatorPage() {
                   <details className="muted text-xs">
                     <summary>Run reference</summary>
                     <p className="mt-2 break-all">
-                      Model {result.modelVersion} · Baseline {result.baselineId}
+                      Individual reference comparison · Synthetic projection
                     </p>
                   </details>
                   <Button

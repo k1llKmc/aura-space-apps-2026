@@ -7,6 +7,8 @@ import { LoginScreen } from '@/components/auth/login-screen';
 import { Badge, Button, ErrorState, Modal } from '@/components/ui/ui';
 import { CommDelayBadge } from '@/components/ui/aura';
 import { DEMO_MODE, DEMO_STORAGE } from '@/demo/config';
+import { ThemeToggle } from '@/components/experience/theme';
+import { asset } from '@/components/experience/format';
 import { useNotifications } from '@/components/ui/notifications';
 import { WorkspaceProvider, useWorkspace } from './workspace-provider';
 
@@ -148,12 +150,11 @@ function ShellContent({ children }: { children: ReactNode }) {
           className="brand"
           aria-label="AURA Mission Control"
         >
-          <span className="brand-mark" aria-hidden="true">
-            A
-          </span>
-          <span>
-            AURA<span className="brand-subtitle">Mission health workspace</span>
-          </span>
+          <img
+            className="aura-wordmark"
+            src={asset('/aura-logo.png')}
+            alt="AURA"
+          />
         </Link>
         <Navigation />
         <div className="sidebar-footer">
@@ -213,6 +214,7 @@ function ShellContent({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="topbar-actions">
+            <ThemeToggle />
             <div className="comm-delay" title="Mission communication delay">
               <CommDelayBadge value={mission.data?.commDelayFormatted} />
             </div>

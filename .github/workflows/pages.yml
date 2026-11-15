@@ -29,6 +29,7 @@ jobs:
         with:
           path: apps/web/out
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:

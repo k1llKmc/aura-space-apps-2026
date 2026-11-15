@@ -10,6 +10,10 @@ import {
   PageHeader,
 } from '@/components/ui/ui';
 import { useWorkspace } from '@/components/shell/workspace-provider';
+import { TodaysMission } from '@/components/experience/progress';
+import { CabinTrends } from '@/components/experience/analytics';
+import { MissionJournal } from '@/components/experience/journal';
+import { DEMO_MODE } from '@/demo/config';
 const hazards = {
   spaceRadiation: 'Space radiation',
   alteredGravity: 'Altered gravity',
@@ -95,6 +99,8 @@ export function MissionDashboard() {
               detail="Scoped to your account permissions"
             />
           </div>
+          {DEMO_MODE && <TodaysMission />}
+          {DEMO_MODE && <CabinTrends environment={data.environment} />}
           <section className="panel section-panel">
             <div className="section-heading">
               <h2>Five mission hazards</h2>
@@ -138,6 +144,7 @@ export function MissionDashboard() {
           </section>
         </>
       )}
+      {DEMO_MODE && <MissionJournal />}
       <section className="panel section-panel">
         <div className="section-heading">
           <h2>Priorities to review</h2>

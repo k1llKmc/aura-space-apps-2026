@@ -10,6 +10,7 @@ import {
   type HealthRecordResponse,
 } from '@aura/shared-types';
 import { apiClient } from '@/services/api/client';
+import { friendly } from '@/components/experience/format';
 const inputClass =
   'mt-1 block w-full rounded border border-slate-600 bg-slate-800 p-2 text-white';
 type RuleDraft = {
@@ -189,7 +190,9 @@ export function HealthEditors({
               }}
             >
               {Object.values(BodyZone).map((value) => (
-                <option key={value}>{value}</option>
+                <option key={value} value={value}>
+                  {friendly(value)}
+                </option>
               ))}
             </select>
           </label>
@@ -211,7 +214,7 @@ export function HealthEditors({
                   {Object.entries(zoneMetricCatalog[zone]).map(
                     ([key, unit]) => (
                       <option key={key} value={key}>
-                        {key} ({unit})
+                        {friendly(key)} ({unit})
                       </option>
                     ),
                   )}
@@ -381,7 +384,9 @@ export function HealthEditors({
               }
             >
               {Object.values(BodyZone).map((value) => (
-                <option key={value}>{value}</option>
+                <option key={value} value={value}>
+                  {friendly(value)}
+                </option>
               ))}
             </select>
           </label>
@@ -393,13 +398,15 @@ export function HealthEditors({
               className={inputClass}
             >
               {Object.values(DataSourceType).map((source) => (
-                <option key={source}>{source}</option>
+                <option key={source} value={source}>
+                  {friendly(source)}
+                </option>
               ))}
             </select>
           </label>
           {Object.entries(zoneMetricCatalog[recordZone]).map(([key, unit]) => (
             <label key={key}>
-              {key} ({unit})
+              {friendly(key)} ({unit})
               <input
                 type="number"
                 step="any"

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useWorkspace } from '@/components/shell/workspace-provider';
 import { CrewCard } from '@/components/ui/aura';
+import { DEMO_MODE } from '@/demo/config';
 import {
   Button,
   DataTable,
@@ -68,55 +69,57 @@ export function CrewOverview() {
                   <CrewCard key={member.id} member={member} />
                 ))}
               </div>
-              <DataTable
-                caption="Accessible crew roster"
-                rows={rows.slice(offset, offset + 20)}
-                columns={[
-                  {
-                    key: 'name',
-                    label: 'Crew member',
-                    render: (member) => (
-                      <Link className="crew-name" href={`/crew/${member.id}`}>
-                        <span className="avatar" aria-hidden="true">
-                          {member.name
-                            .split(' ')
-                            .filter(Boolean)
-                            .slice(-2)
-                            .map((part) => part[0])
-                            .join('')}
-                        </span>
-                        <strong>{member.name}</strong>
-                      </Link>
-                    ),
-                  },
-                  {
-                    key: 'role',
-                    label: 'Mission role',
-                    render: (member) => member.role,
-                  },
-                  {
-                    key: 'profile',
-                    label: 'Health profile',
-                    render: (member) => (
-                      <Link className="text-link" href={`/crew/${member.id}`}>
-                        View profile →
-                      </Link>
-                    ),
-                  },
-                  {
-                    key: 'check',
-                    label: 'Daily report',
-                    render: (member) => (
-                      <Link
-                        className="button button-secondary"
-                        href={`/daily-check?crewMemberId=${member.id}`}
-                      >
-                        Record check
-                      </Link>
-                    ),
-                  },
-                ]}
-              />
+              {!DEMO_MODE && (
+                <DataTable
+                  caption="Accessible crew roster"
+                  rows={rows.slice(offset, offset + 20)}
+                  columns={[
+                    {
+                      key: 'name',
+                      label: 'Crew member',
+                      render: (member) => (
+                        <Link className="crew-name" href={`/crew/${member.id}`}>
+                          <span className="avatar" aria-hidden="true">
+                            {member.name
+                              .split(' ')
+                              .filter(Boolean)
+                              .slice(-2)
+                              .map((part) => part[0])
+                              .join('')}
+                          </span>
+                          <strong>{member.name}</strong>
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: 'role',
+                      label: 'Mission role',
+                      render: (member) => member.role,
+                    },
+                    {
+                      key: 'profile',
+                      label: 'Health profile',
+                      render: (member) => (
+                        <Link className="text-link" href={`/crew/${member.id}`}>
+                          View profile →
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: 'check',
+                      label: 'Daily report',
+                      render: (member) => (
+                        <Link
+                          className="button button-secondary"
+                          href={`/daily-check?crewMemberId=${member.id}`}
+                        >
+                          Record check
+                        </Link>
+                      ),
+                    },
+                  ]}
+                />
+              )}
               <Pagination
                 total={rows.length}
                 offset={offset}

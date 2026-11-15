@@ -101,8 +101,14 @@ test('complete workspace: routes, forms, reviews, projections, access, mobile na
     ['Stress', '3'],
     ['Fatigue', '4'],
     ['Sleep in the last 24 hours', '7.5'],
-  ])
-    await page.getByLabel(name, { exact: true }).fill(value);
+  ]) {
+    const input = page.getByLabel(name, { exact: true });
+    if ((await input.getAttribute('type')) === 'range') {
+      await input.focus();
+      await input.press('Home');
+      for (let i = 1; i < Number(value); i++) await input.press('ArrowRight');
+    } else await input.fill(value);
+  }
   await page
     .getByLabel('Notes', { exact: true })
     .fill('Synthetic end-to-end daily report.');
@@ -205,9 +211,7 @@ test('complete workspace: routes, forms, reviews, projections, access, mobile na
   await page
     .getByLabel('Assumed source', { exact: true })
     .selectOption('DIAGNOSTIC_DEVICE');
-  await page
-    .getByLabel('intraocularPressure (mmHg)', { exact: true })
-    .fill('112');
+  await page.getByLabel('Eye pressure (mmHg)', { exact: true }).fill('112');
   await page
     .getByRole('button', { name: 'Run baseline projection', exact: true })
     .click();

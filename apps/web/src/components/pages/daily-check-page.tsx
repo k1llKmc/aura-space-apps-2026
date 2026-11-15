@@ -18,6 +18,9 @@ import {
   PageHeader,
 } from '@/components/ui/ui';
 import { CrewSelect, useCrewSelection } from './crew-selection';
+import { WellbeingSlider } from '@/components/experience/wellbeing-slider';
+import { MemoryCheck } from '@/components/experience/memory-check';
+import { DEMO_MODE } from '@/demo/config';
 export function DailyCheckPage() {
   const query = useSearchParams();
   const { roster, selected, setSelected, invalidRequested } = useCrewSelection(
@@ -155,22 +158,7 @@ export function DailyCheckPage() {
               ['stressScore', 'Stress', '1 = very low · 10 = very high'],
               ['fatigueScore', 'Fatigue', '1 = very low · 10 = very high'],
             ].map(([key, label, hint]) => (
-              <label key={key}>
-                {label}
-                <input
-                  aria-label={label}
-                  aria-describedby={`${key}-hint`}
-                  name={key}
-                  type="number"
-                  required
-                  min={1}
-                  max={10}
-                  step={1}
-                />
-                <span id={`${key}-hint`} className="field-hint">
-                  {hint}
-                </span>
-              </label>
+              <WellbeingSlider key={key} name={key} label={label} hint={hint} />
             ))}
             <label>
               Sleep in the last 24 hours
@@ -218,6 +206,7 @@ export function DailyCheckPage() {
           </div>
         </form>
       )}
+      {DEMO_MODE && <MemoryCheck key={selected} crewId={selected} />}
       {result && (
         <section className="space-y-4">
           <div className="panel section-panel">

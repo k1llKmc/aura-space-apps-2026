@@ -19,6 +19,11 @@ import {
   type RiskStatus,
 } from '@aura/shared-types';
 import { DEMO_STORAGE, demoCrewIds, demoUser } from './config';
+import {
+  asset,
+  progress,
+  type MemoryResult,
+} from '@/components/experience/format';
 const now = () => new Date().toISOString();
 const ago = (days: number) =>
   new Date(Date.now() - days * 86400000).toISOString();
@@ -41,9 +46,10 @@ export const demoCrew = demoCrewIds.map((id, i) => ({
     'Systems Engineer',
     'Pilot',
   ][i],
-  photoUrl: null,
+  photoUrl: asset(`/crew/${i + 1}.jpg`),
 }));
 type Store = {
+  memoryTests: MemoryResult[];
   baselines: Record<string, BaselineResponse[]>;
   records: Record<string, (HealthRecordResponse & { crewMemberId?: string })[]>;
   alerts: AlertResponse[];
@@ -61,6 +67,7 @@ const baseValues: Record<BodyZone, number[]> = {
 };
 function seed(): Store {
   const store: Store = {
+    memoryTests: [],
     baselines: {},
     records: {},
     alerts: [],
@@ -174,6 +181,29 @@ function seed(): Store {
     resolutionNote: null,
     origin: 'SYNTHETIC_DEMO',
   })) as AlertResponse[];
+  demoCrew.forEach((crew, i) => {
+    for (let day = 1; day <= 30; day++) {
+      if (i > 1 && day % (i + 3) === 0) continue;
+      store.records[crew.id].push({
+        id: `daily-${i}-${day}`,
+        zone: null,
+        sourceType: 'MANUAL_REPORT',
+        recordedAt: ago(day),
+        isOutdated: day > 7,
+        metrics: {
+          moodScore: Math.min(
+            10,
+            Math.max(1, Math.round(7 + Math.sin(day * 0.6 + i) * 2)),
+          ),
+          stressScore: Math.round(4 + Math.sin(day * 0.4 + i) * 2),
+          fatigueScore: Math.round(4 + Math.cos(day * 0.5 + i) * 2),
+          sleepHours: Number((7.2 + Math.sin(day * 0.7 + i) * 1.1).toFixed(1)),
+        },
+        units: {},
+        symptoms: [],
+      });
+    }
+  });
   return store;
 }
 let memory: Store | undefined;
@@ -189,6 +219,7 @@ function state() {
   return memory!;
 }
 function save(s: Store) {
+  window.dispatchEvent(new Event('aura:updated'));
   try {
     localStorage.setItem(DEMO_STORAGE, JSON.stringify(s));
   } catch {
@@ -351,7 +382,30 @@ export const demoAdapter: AxiosAdapter = async (config) => {
     if (method !== 'GET' && mutationKey && s.receipts[mutationKey])
       data = s.receipts[mutationKey];
     else {
-      if (path === '/auth/me') data = demoUser;
+      if (path === '/experience' && method === 'GET')
+        data = {
+          records: s.records,
+          audit: s.audit,
+          memoryTests: s.memoryTests,
+        };
+      else if (path === '/experience/memory' && method === 'POST') {
+        if (
+          !demoCrewIds.includes(body.crewMemberId) ||
+          !Number.isInteger(body.correct) ||
+          body.correct < 0 ||
+          body.correct > 3 ||
+          body.rounds !== 3
+        )
+          throw new Error('Complete three memory rounds before saving.');
+        const result = {
+          crewMemberId: body.crewMemberId,
+          recordedAt: now(),
+          correct: body.correct,
+          rounds: 3,
+        };
+        s.memoryTests.unshift(result);
+        data = result;
+      } else if (path === '/auth/me') data = demoUser;
       else if (path === '/missions/current')
         data = {
           missionId: demoUser.missionId,
@@ -444,7 +498,15 @@ export const demoAdapter: AxiosAdapter = async (config) => {
           recordedAt: now(),
           checkDate: now().slice(0, 10),
           xpEarned: 50,
-          currentStreak: 1,
+          currentStreak:
+            progress(
+              {
+                records: s.records,
+                audit: s.audit,
+                memoryTests: s.memoryTests,
+              },
+              body.crewMemberId,
+            ).streak + 1,
           message: 'Daily report saved in this browser.',
         };
         s.checks[key] = data;

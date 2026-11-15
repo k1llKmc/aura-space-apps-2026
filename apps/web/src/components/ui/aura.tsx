@@ -7,6 +7,8 @@ import type {
   HealthZoneStatus,
 } from '@aura/shared-types';
 import { Badge } from './ui';
+import { ProgressBar } from '@/components/experience/progress';
+import { DEMO_MODE } from '@/demo/config';
 
 export const zoneLabels: Record<string, string> = {
   HEAD_EYES: 'Head & eyes',
@@ -41,6 +43,14 @@ export function CommDelayBadge({ value }: { value?: string }) {
 export function CrewCard({ member }: { member: CrewSummary }) {
   return (
     <article className="panel crew-card">
+      {member.photoUrl && (
+        <img
+          className="crew-card-photo"
+          src={member.photoUrl}
+          alt={`Illustrative portrait for ${member.name}`}
+          loading="lazy"
+        />
+      )}
       <span className="avatar" aria-hidden="true">
         {member.name
           .split(' ')
@@ -60,6 +70,7 @@ export function CrewCard({ member }: { member: CrewSummary }) {
       >
         Open profile →
       </Link>
+      {DEMO_MODE && <ProgressBar id={member.id} compact />}
     </article>
   );
 }

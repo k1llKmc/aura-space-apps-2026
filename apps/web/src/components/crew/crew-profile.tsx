@@ -13,6 +13,11 @@ import { apiClient } from '@/services/api/client';
 import { HealthEditors } from './health-editors';
 import { BodyMap } from './body-map';
 import { AlertCard, ZoneStatusCard } from '@/components/ui/aura';
+import { CrewHero } from '@/components/experience/progress';
+import { HealthTrends } from '@/components/experience/analytics';
+import { ReadableData, MissionJournal } from '@/components/experience/journal';
+import { friendly } from '@/components/experience/format';
+import { DEMO_MODE } from '@/demo/config';
 const zoneLabels: Record<string, string> = {
   HEAD_EYES: 'Head & eyes',
   CHEST_CARDIO: 'Chest & cardiovascular',
@@ -95,8 +100,14 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
       )}
       {profile && (
         <>
+          {DEMO_MODE && (
+            <>
+              <CrewHero id={id} />
+              <HealthTrends id={id} />
+            </>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-xl text-white">{profile.name}</h3>
+            <h3 className="text-xl text-white">{DEMO_MODE?'Clinical overview':profile.name}</h3>
             <button
               onClick={refresh}
               className="rounded border border-slate-600 px-3 py-2 text-slate-200"
@@ -140,7 +151,7 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
                       className="rounded bg-slate-800 p-3 text-sm text-slate-200"
                     >
                       <p>
-                        {item.metric}: {item.current ?? 'Unavailable'}{' '}
+                        {friendly(item.metric)}: {item.current ?? 'Unavailable'}{' '}
                         {item.unit} · reference {item.baseline}
                       </p>
                       <p className="mt-1 text-slate-400">{item.reason}</p>
@@ -150,7 +161,7 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
                     <details className="text-xs text-slate-400">
                       <summary>Assessment reference</summary>
                       <p className="break-all">
-                        Baseline {zone.baselineId} · {zone.rulesVersion} ·{' '}
+                        Individual reference ·{' '}
                         {zone.assessmentComplete
                           ? 'Complete comparison'
                           : 'Incomplete comparison'}
@@ -200,17 +211,12 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
                 {record.sourceType.replaceAll('_', ' ')} ·{' '}
                 {record.isOutdated ? 'STALE' : 'CURRENT'}
               </summary>
-              <pre className="mt-3 overflow-x-auto text-xs">
-                {JSON.stringify(
-                  {
-                    metrics: record.metrics,
-                    units: record.units,
-                    symptoms: record.symptoms,
-                  },
-                  null,
-                  2,
+              <div className="mt-3">
+                <ReadableData value={record.metrics} />
+                {record.symptoms.length > 0 && (
+                  <p>Symptoms: {record.symptoms.join(', ')}</p>
                 )}
-              </pre>
+              </div>
             </details>
           ))}
           <Pager
@@ -236,9 +242,9 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
                 {zoneLabels[baseline.zone]} ·{' '}
                 {new Date(baseline.createdAt).toLocaleString()}
               </summary>
-              <pre className="mt-3 overflow-x-auto text-xs">
-                {JSON.stringify(baseline.baselineData, null, 2)}
-              </pre>
+              <div className="mt-3">
+                <ReadableData value={baseline.baselineData} />
+              </div>
             </details>
           ))}
           <Pager
@@ -249,7 +255,8 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
           />
         </section>
       )}
-      {audit && (
+      {DEMO_MODE && <MissionJournal crewId={id} />}
+      {!DEMO_MODE && audit && (
         <section className="space-y-3">
           <h3 className="text-xl text-white">Activity & changes</h3>
           {audit.items.length === 0 && (
@@ -266,9 +273,9 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
                 {event.actorUsername ||
                   (event.actorId ? 'Operator' : 'Automatic check')}
               </summary>
-              <pre className="mt-3 overflow-x-auto text-xs">
-                {JSON.stringify(event.details, null, 2)}
-              </pre>
+              <div className="mt-3">
+                <ReadableData value={event.details} />
+              </div>
             </details>
           ))}
           <Pager

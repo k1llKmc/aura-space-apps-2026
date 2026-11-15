@@ -13,9 +13,21 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   async function capture(name: string) {
     if (!process.env.DEMO_SCREENSHOTS) return;
     mkdirSync(process.env.DEMO_SCREENSHOTS, { recursive: true });
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement)?.blur();
+      window.scrollTo(0, 0);
+    });
+    await page.mouse.move(1, 1);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
     await page.screenshot({
       path: path.join(process.env.DEMO_SCREENSHOTS, name + '.png'),
       fullPage: true,
+      style: '.toast-stack { visibility: hidden; }',
     });
   }
   async function nav(name: string) {
@@ -58,8 +70,18 @@ test('public mission: no login, all routes, local writes, simulation, reload and
     ['Stress', '3'],
     ['Fatigue', '4'],
     ['Sleep in the last 24 hours', '7.5'],
-  ])
-    await page.getByLabel(label, { exact: true }).fill(value);
+  ]) {
+    const input = page.getByLabel(label, { exact: true });
+    if ((await input.getAttribute('type')) === 'range') {
+      await input.focus();
+      await input.press('Home');
+      for (let i = 1; i < Number(value); i++) await input.press('ArrowRight');
+    } else await input.fill(value);
+  }
+  await expect(page.getByLabel('Mood', { exact: true })).toHaveAttribute(
+    'aria-valuetext',
+    '8 out of 10, Good',
+  );
   await capture('04-daily-check');
   await page
     .getByRole('button', { name: 'Review daily check', exact: true })
@@ -67,7 +89,34 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   await page
     .getByRole('button', { name: 'Confirm and save', exact: true })
     .click();
-  await expect(page.getByRole('heading', { name: /^Daily report saved for/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /^Daily report saved for/ }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Begin memory check', exact: true })
+    .click();
+  for (let round = 0; round < 3; round++) {
+    const sequence = await page.getByTestId('memory-sequence').textContent();
+    if (round === 0) await capture('11-memory-check');
+    const input = page.getByLabel('Remembered digits', { exact: true });
+    await expect(input).toBeVisible();
+    await input.fill(sequence!);
+    await page
+      .getByRole('button', {
+        name: round === 2 ? 'Finish mind check' : 'Next round',
+        exact: true,
+      })
+      .click();
+  }
+  await expect(
+    page.getByRole('heading', { name: 'Mind check complete', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('3 / 3 recalled', { exact: true })).toBeVisible();
+  await capture('12-memory-result');
+  await nav('Crew Overview');
+  await expect(page.locator('.crew-card').first()).toContainText('1,570 XP');
+  await page.reload();
+  await expect(page.locator('.crew-card').first()).toContainText('1,570 XP');
   await nav('Alerts');
   await capture('05-alerts');
   await page.getByRole('button', { name: 'Review warning' }).first().click();
@@ -84,9 +133,7 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   await page
     .getByLabel('Assumed source', { exact: true })
     .selectOption('DIAGNOSTIC_DEVICE');
-  await page
-    .getByLabel('intraocularPressure (mmHg)', { exact: true })
-    .fill('20');
+  await page.getByLabel('Eye pressure (mmHg)', { exact: true }).fill('20');
   await page
     .getByRole('button', { name: 'Run baseline projection', exact: true })
     .click();
@@ -107,6 +154,21 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   ).toBeVisible();
   await capture('08-settings');
   await nav('Mission Control');
+  await expect(
+    page.getByText('2 / 2 rituals complete', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: '30 days', exact: true }).click();
+  await page.getByRole('button', { name: 'Temperature', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Switch to light theme', exact: true })
+    .click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await capture('13-light-mission');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page
+    .getByRole('button', { name: 'Switch to dark theme', exact: true })
+    .click();
   await page.setViewportSize({ width: 390, height: 844 });
   await capture('10-mobile-mission');
   await page.getByRole('button', { name: 'Open navigation' }).click();
@@ -117,6 +179,29 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   await expect(
     page.getByRole('heading', { name: 'Alerts', level: 1, exact: true }),
   ).toBeVisible();
+  for (const name of [
+    'Crew Overview',
+    'Daily Health Check',
+    'Mission Risk Simulator',
+    'Countermeasure Protocols',
+    'Settings / Access',
+    'Mission Control',
+  ]) {
+    await page.getByRole('button', { name: 'Open navigation' }).click();
+    await page
+      .getByRole('dialog', { name: 'Navigation', exact: true })
+      .getByRole('link', { name, exact: true })
+      .click();
+    await expect(
+      page.getByRole('heading', { name, level: 1, exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+      `${name} mobile overflow`,
+    ).toBe(true);
+  }
   expect(apiRequests).toEqual([]);
   expect(errors).toEqual([]);
 });
