@@ -1,5 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type { ApiErrorResponse } from '@/types';
+import { DEMO_MODE } from '@/demo/config';
+import { demoAdapter } from '@/demo/adapter';
 
 const baseURL = '/api/v1';
 
@@ -15,6 +17,7 @@ export class ApiClientError extends Error {
 
 export const apiClient = axios.create({
   baseURL,
+  ...(DEMO_MODE ? { adapter: demoAdapter } : {}),
   timeout: 10_000,
   headers: { Accept: 'application/json' },
 });

@@ -6,6 +6,7 @@ import { useSession } from '@/components/auth/session-provider';
 import { LoginScreen } from '@/components/auth/login-screen';
 import { Badge, Button, ErrorState, Modal } from '@/components/ui/ui';
 import { CommDelayBadge } from '@/components/ui/aura';
+import { DEMO_MODE, DEMO_STORAGE } from '@/demo/config';
 import { useNotifications } from '@/components/ui/notifications';
 import { WorkspaceProvider, useWorkspace } from './workspace-provider';
 
@@ -55,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 function Navigation({ navigate }: { navigate?: () => void }) {
-  const path = usePathname();
+  const path = usePathname().replace(/\/$/, '') || '/';
   return (
     <nav aria-label="Primary navigation">
       {['Operations', 'Resources'].map((section) => (
@@ -96,7 +97,7 @@ function ShellContent({ children }: { children: ReactNode }) {
     [leaving, setLeaving] = useState(false);
   const seen = useRef<Set<string> | null>(null);
   const newestWarning = useRef(0);
-  const path = usePathname();
+  const path = usePathname().replace(/\/$/, '') || '/';
   useEffect(() => {
     setMenu(false);
     setNotifications(false);
@@ -127,6 +128,11 @@ function ShellContent({ children }: { children: ReactNode }) {
   const current = links.find((link) => link.href === path);
   const isProfile = path.startsWith('/crew/');
   async function signOut() {
+    if (DEMO_MODE) {
+      localStorage.removeItem(DEMO_STORAGE);
+      window.location.reload();
+      return;
+    }
     setLeaving(true);
     await logout();
     setLeaving(false);
@@ -157,7 +163,9 @@ function ShellContent({ children }: { children: ReactNode }) {
           {mission.error
             ? 'Mission connection unavailable'
             : mission.data
-              ? 'Onboard API connected'
+              ? DEMO_MODE
+                ? 'Synthetic mission · local demo'
+                : 'Onboard API connected'
               : 'Connecting to mission…'}
           <p className="mt-2 text-xs text-slate-500">
             Astronaut Unified Risk Assessment
@@ -165,6 +173,23 @@ function ShellContent({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="workspace">
+        {DEMO_MODE && (
+          <div className="demo-banner">
+            <span>
+              <strong>Interactive mission demo</strong> · Fictional crew and
+              synthetic health data. Changes stay in this browser.
+            </span>
+            <button
+              className="button button-secondary"
+              onClick={() => {
+                localStorage.removeItem(DEMO_STORAGE);
+                window.location.reload();
+              }}
+            >
+              Reset demo
+            </button>
+          </div>
+        )}
         <header className="topbar">
           <div className="topbar-main">
             <Button
@@ -224,7 +249,11 @@ function ShellContent({ children }: { children: ReactNode }) {
               </span>
             </Button>
             <Button disabled={leaving} onClick={signOut}>
-              {leaving ? 'Signing out…' : 'Sign out'}
+              {DEMO_MODE
+                ? 'Reset workspace'
+                : leaving
+                  ? 'Signing out…'
+                  : 'Sign out'}
             </Button>
           </div>
         </header>

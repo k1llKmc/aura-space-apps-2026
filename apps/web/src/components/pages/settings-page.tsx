@@ -16,6 +16,7 @@ import {
   PageHeader,
 } from '@/components/ui/ui';
 import { apiClient } from '@/services/api/client';
+import { DEMO_MODE, DEMO_STORAGE } from '@/demo/config';
 const permissions: Record<UserRole, string> = {
   COMMANDER:
     'Mission crew health, warnings, simulations and account provisioning.',
@@ -66,6 +67,42 @@ export function SettingsPage() {
     }
   }
   if (!session.user) return null;
+  if (DEMO_MODE)
+    return (
+      <div className="page-stack">
+        <PageHeader
+          title="Settings / Access"
+          eyebrow="Workspace / Public demonstration"
+          description="Explore AURA with a fictional mission and synthetic crew data."
+        />
+        <section className="panel section-panel space-y-4">
+          <h2>Public mission workspace</h2>
+          <Badge value="CURRENT" label="Interactive demo" />
+          <p>
+            All visitors enter Mission Control directly. This demonstration runs
+            entirely in your browser; no account or password is required.
+          </p>
+          <p className="muted">
+            Reports, reference edits and warning reviews are saved on this
+            device only. They are not shared with other visitors. Medical values
+            and reference rules are synthetic examples, not clinical guidance.
+          </p>
+          <p className="muted">
+            The full server edition supports authenticated mission roles,
+            PostgreSQL, telemetry and background workers. Account provisioning
+            is reserved for that edition.
+          </p>
+          <Button
+            onClick={() => {
+              localStorage.removeItem(DEMO_STORAGE);
+              location.reload();
+            }}
+          >
+            Reset all demo data
+          </Button>
+        </section>
+      </div>
+    );
   return (
     <div className="page-stack">
       <PageHeader
@@ -186,7 +223,9 @@ export function SettingsPage() {
                   maxLength={128}
                   autoComplete="new-password"
                 />
-                <span id="initial-password-hint" className="field-hint">12–128 characters</span>
+                <span id="initial-password-hint" className="field-hint">
+                  12–128 characters
+                </span>
               </label>
               <label>
                 Account role

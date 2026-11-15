@@ -1,5 +1,29 @@
 # AURA
 
+Public interactive site: https://k1llkmc.github.io/aura-space-apps-2026/
+
+The public edition opens Mission Control directly, with a fictional Mars mission
+and six synthetic crew profiles. It needs no installation or login. Reports,
+warning reviews and reference edits stay in that browser. Reset demo restores
+the original scenario. This edition has no server persistence or real accounts;
+the authenticated Docker edition below remains available separately.
+
+GitHub Actions builds and browser-tests the static export before publishing it
+to Pages. To reproduce that build in PowerShell:
+
+```powershell
+npm ci
+$env:NEXT_PUBLIC_DEMO_MODE='true'
+$env:NEXT_PUBLIC_BASE_PATH='/aura-space-apps-2026'
+npm run web:build
+node scripts/serve-demo.mjs
+```
+
+Open http://127.0.0.1:4173/aura-space-apps-2026/. The files in `apps/web/out`
+can be served by a static host with this same path. Clear the two exported
+environment variables before building the server edition. Browser verification:
+`npx playwright test --config playwright.demo.config.ts`.
+
 Next.js frontend, NestJS API/worker, PostgreSQL 16 and Redis 7. Requires Node.js 22+
 and Docker Compose v2 with Docker Engine running.
 

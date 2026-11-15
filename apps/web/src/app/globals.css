@@ -1,4 +1,25 @@
 @import 'tailwindcss';
+.demo-banner {
+  padding: 10px 24px;
+  background: #102e3c;
+  border-bottom: 1px solid #326675;
+  color: #bcefff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.demo-banner .button {
+  flex-shrink: 0;
+}
+@media (max-width: 560px) {
+  .demo-banner {
+    padding: 10px 16px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 
 .health-zone-layout {
   display: grid;

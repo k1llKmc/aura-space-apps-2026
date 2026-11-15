@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { AuthUser, LoginResponse } from '@aura/shared-types';
 import { apiClient, setAccessToken } from '@/services/api/client';
+import { DEMO_MODE, demoUser } from '@/demo/config';
 interface Session {
   user?: AuthUser;
   expiresAt?: number;
@@ -19,7 +20,7 @@ interface Session {
 }
 const Context = createContext<Session | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser>();
+  const [user, setUser] = useState<AuthUser | undefined>(DEMO_MODE ? demoUser : undefined);
   const [expiresAt, setExpiresAt] = useState<number>();
   const [message, setMessage] = useState('');
   const clear = useCallback(() => {
