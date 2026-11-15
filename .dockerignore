@@ -5,3 +5,6 @@
 **/.env*
 !.env.example
 *.log
+.test-data
+test-results
+playwright-report

@@ -114,6 +114,37 @@ Backend build, migrations, repeated bootstrap/seed, API tests and the frontend
 proxy are checked locally. Container image build and Compose end-to-end startup
 require Docker; they must be verified on a Docker-equipped host before deployment.
 
+## Frontend workspace
+
+The signed-in app includes Mission Control, Crew Overview, Crew Profile, Daily
+Health Check, Alerts, Mission Risk Simulator, Countermeasure Protocols and
+Settings / Access. A shared responsive shell provides mission context, delay,
+navigation, breadcrumbs, notifications and session controls. Forms and tables
+use the authenticated API; permissions follow the signed-in account.
+Commander can create mission accounts from Settings / Access.
+
+Architecture, routes and current capability boundaries:
+[.ai_context/frontend_architecture.md](.ai_context/frontend_architecture.md).
+
+Run the browser journey against a disposable seeded Docker stack:
+
+```sh
+npm ci
+npx playwright install chromium
+npm start
+node scripts/web-e2e-fixtures.mjs
+npm run test:web
+node scripts/web-e2e-fixtures.mjs cleanup
+```
+
+Always run fixture cleanup, including after a failed test. Fixtures use unique
+synthetic records and ignored local credentials. The test uses the bootstrap
+account from root `.env`; its password must match the provisioned account.
+`E2E_BASE_URL` optionally overrides the web address; `E2E_BROWSER_PATH` selects an
+installed Chromium executable. For native development, export the isolated DB
+connection and set `E2E_NATIVE=1` for fixture commands. GitHub Actions verifies the
+browser journey, full Docker startup and restart on every push.
+
 ## Crew health development
 
 The signed-in site now includes crew profiles, five zone assessments, independent

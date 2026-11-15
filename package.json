@@ -2,6 +2,7 @@
   "name": "aura-space-apps-2026",
   "private": true,
   "workspaces": ["apps/api", "apps/web", "packages/shared-types"],
+  "devDependencies": { "@playwright/test": "^1.58.0" },
   "scripts": {
     "start": "node scripts/run.mjs up",
     "dev": "node scripts/run.mjs dev",
@@ -11,6 +12,7 @@
     "db:setup": "node scripts/run.mjs bootstrap",
     "db:smoke": "node scripts/run.mjs smoke",
     "web:build": "node scripts/run.mjs web-build",
-    "web:dev": "node scripts/run.mjs dev"
+    "web:dev": "node scripts/run.mjs dev",
+    "test:web": "playwright test"
   }
 }

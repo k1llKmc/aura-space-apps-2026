@@ -34,8 +34,11 @@ if (mode === 'ci-test') {
   env.AURA_TEST_REDIS_URL = env.REDIS_URL;
   launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs', 'apps/api/test/health-rules.test.cjs', 'apps/api/test/health.database.test.cjs', 'apps/api/test/tasks.queue.test.cjs'])
     .on('exit', (code) => { process.exitCode = code ?? 1; });
-} else if (['api', 'bootstrap', 'worker', 'worker-health', 'worker-smoke'].includes(mode)) {
-  const entries = { api: 'apps/api/dist/main.js', bootstrap: 'scripts/bootstrap.cjs', worker: 'apps/api/dist/worker.js', 'worker-health': 'apps/api/dist/worker-health.js', 'worker-smoke': 'scripts/verify-worker.cjs' };
+} else if (['api', 'bootstrap', 'worker', 'worker-health', 'worker-smoke', 'e2e-setup', 'e2e-cleanup'].includes(mode)) {
+  const entries = { api: 'apps/api/dist/main.js', bootstrap: 'scripts/bootstrap.cjs', worker: 'apps/api/dist/worker.js', 'worker-health': 'apps/api/dist/worker-health.js', 'worker-smoke': 'scripts/verify-worker.cjs', 'e2e-setup': 'scripts/web-test-fixture.cjs', 'e2e-cleanup': 'scripts/web-test-fixture.cjs' };
+  if (mode === 'e2e-cleanup') {
+    node(entries[mode], ['cleanup']).on('exit', (code) => { process.exitCode = code ?? 1; });
+  } else
   node(entries[mode]).on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'up') {
   launch('docker', ['compose', 'up', '--build', '-d', '--wait']).on('exit', (code) => { process.exitCode = code ?? 1; });

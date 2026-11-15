@@ -11,6 +11,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install browser test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
       - name: Build and start from a clean database
         run: npm start
       - name: Check page and API proxy
@@ -21,6 +25,13 @@ jobs:
           node scripts/verify-proxy.mjs
           docker compose exec -T api node scripts/run.mjs ci-test
           docker compose exec -T -e WORKER_SMOKE_API_URL=http://web:3000/api/v1 api node scripts/run.mjs worker-smoke
+      - name: Prepare isolated UI fixture
+        run: node scripts/web-e2e-fixtures.mjs
+      - name: Browser workspace journey
+        run: npm run test:web
+      - name: Remove isolated UI fixture
+        if: always()
+        run: node scripts/web-e2e-fixtures.mjs cleanup
       - name: Verify restart without duplicate seed data
         run: |
           docker compose down
