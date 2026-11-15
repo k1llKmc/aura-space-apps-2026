@@ -7,13 +7,13 @@ import { pagination, parse, uuid } from '../../common/validation';
 import { AuthService } from '../auth/auth.service';
 import type { AuthRequest } from '../auth/auth.guard';
 import { baselineSchema, recordSchema } from './health.schemas';
-import { HealthMonitor } from './health-monitor.service';
+import { TaskQueue } from '../tasks/task-queue.service';
 const historyQuery = pagination.extend({ zone: z.nativeEnum(BodyZone).optional(), sourceType: z.nativeEnum(DataSourceType).optional(),
   from: z.string().datetime({ offset: true }).optional(), to: z.string().datetime({ offset: true }).optional() }).strict()
   .refine((value) => !value.from || !value.to || Date.parse(value.from) <= Date.parse(value.to), 'from must precede to.');
 @Controller('crew')
 export class HealthRecordsController {
-  constructor(private readonly prisma: PrismaService, private readonly auth: AuthService, private readonly monitor: HealthMonitor) {}
+  constructor(private readonly prisma: PrismaService, private readonly auth: AuthService, private readonly queue: TaskQueue) {}
 
   @Get('health/rules-catalog')
   catalogue() { return { rulesVersion: 'baseline-v1', metrics: zoneMetricCatalog }; }
@@ -39,16 +39,17 @@ export class HealthRecordsController {
     const input = parse(recordSchema, body);
     const now = new Date(), recordedAt = input.recordedAt ? new Date(input.recordedAt) : now;
     if (recordedAt > now) throw new BadRequestException('Future-dated measurements are not accepted.');
-    const record = await this.prisma.$transaction(async (tx) => {
+    const { record, task } = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`;
       const record = await tx.healthRecord.create({ data: { crewMemberId: id, ...input, recordedAt,
         isOutdated: now.getTime() - recordedAt.getTime() > 7 * 86400000 } });
       await tx.auditEvent.create({ data: { missionId: request.user.missionId, crewMemberId: id, actorId: request.user.id,
         action: 'HEALTH_RECORD_CREATED', entityId: record.id, details: { zone: record.zone, sourceType: record.sourceType, recordedAt: recordedAt.toISOString(), metrics: input.metrics, units: input.units } } });
-      return record;
+      const task = await this.queue.createHealthTask(tx, request.user.missionId, id, record.id);
+      return { record, task };
     });
-    await this.monitor.refreshCrew(id);
-    return { ...record, recordedAt: record.recordedAt.toISOString() };
+    await this.queue.tryPublish(task);
+    return { ...record, recordedAt: record.recordedAt.toISOString(), assessmentJobId: task.id };
   }
 
   @Get(':id/baselines')
@@ -68,16 +69,17 @@ export class HealthRecordsController {
     this.requireOperator(request);
     const id = parse(uuid, raw); await this.auth.requireCrew(id, request.user);
     const input = parse(baselineSchema, body);
-    const baseline = await this.prisma.$transaction(async (tx) => {
+    const { baseline, task } = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`;
       const baselineData = { schemaVersion: 1, rules: input.rules } as unknown as Prisma.InputJsonObject;
       const baseline = await tx.individualBaseline.create({ data: { crewMemberId: id, zone: input.zone, baselineData } });
       await tx.auditEvent.create({ data: { missionId: request.user.missionId, crewMemberId: id, actorId: request.user.id,
         action: 'BASELINE_SET', entityId: baseline.id, details: { zone: input.zone, reason: input.reason, baselineData } } });
-      return baseline;
+      const task = await this.queue.createHealthTask(tx, request.user.missionId, id, baseline.id);
+      return { baseline, task };
     });
-    await this.monitor.refreshCrew(id);
-    return { id: baseline.id, zone: baseline.zone, baselineData: baseline.baselineData, createdAt: baseline.createdAt.toISOString() };
+    await this.queue.tryPublish(task);
+    return { id: baseline.id, zone: baseline.zone, baselineData: baseline.baselineData, createdAt: baseline.createdAt.toISOString(), assessmentJobId: task.id };
   }
   private requireOperator(request: AuthRequest) {
     if (request.user.role === 'CREW_MEMBER') throw new ForbiddenException('Commander or Medical Officer role is required.');

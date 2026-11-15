@@ -13,6 +13,7 @@ test('JWT and mission access: full HTTP role matrix against PostgreSQL',
   { skip: !process.env.AURA_TEST_DATABASE_URL }, async () => {
     process.env.DATABASE_URL = process.env.AURA_TEST_DATABASE_URL;
     process.env.HEALTH_SWEEP_ENABLED = 'false';
+    process.env.TASK_QUEUE_ENABLED = 'false';
     process.env.JWT_SECRET = 'isolated-test-secret-never-used-in-production-123456789';
     const prisma = new PrismaClient({ datasourceUrl: process.env.AURA_TEST_DATABASE_URL });
     const missionIds = [randomUUID(), randomUUID()];

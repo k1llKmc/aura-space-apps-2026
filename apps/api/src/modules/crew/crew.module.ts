@@ -4,5 +4,5 @@ import { CrewService } from './crew.service';
 import { HealthMonitor } from './health-monitor.service';
 import { HealthRecordsController } from './health-records.controller';
 
-@Module({ controllers: [CrewController, HealthRecordsController], providers: [CrewService, HealthMonitor] })
+@Module({ controllers: [CrewController, HealthRecordsController], providers: [CrewService, HealthMonitor], exports: [CrewService, HealthMonitor] })
 export class CrewModule {}

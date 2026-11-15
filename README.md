@@ -1,6 +1,6 @@
 # AURA
 
-Next.js frontend, NestJS API, PostgreSQL 16 and Redis 7. Requires Node.js 22+
+Next.js frontend, NestJS API/worker, PostgreSQL 16 and Redis 7. Requires Node.js 22+
 and Docker Compose v2 with Docker Engine running.
 
 ## One-command local launch
@@ -17,12 +17,12 @@ Open http://localhost:3000. API: http://localhost:3001/api/v1/missions/current.
 Custom ports are configured with WEB_PORT and API_PORT in root `.env`.
 
 Startup waits for PostgreSQL/Redis health, applies migrations, seeds only when
-there are no missions, checks the initial seed, then starts API and web. Restarting
+there are no missions, checks the initial seed, then starts API, worker and web. Restarting
 does not reseed or overwrite operational records. A failed migration/bootstrap
 prevents API startup. Named PostgreSQL volume persists data across shutdowns.
 
 ```sh
-docker compose logs -f bootstrap api web
+docker compose logs -f bootstrap api worker web
 docker compose down
 npm start
 ```
@@ -59,7 +59,7 @@ npm run dev
 ```
 
 `db:setup` migrates, seeds an empty database and provisions the first account. `dev` builds API
-with TypeScript decorator metadata, watches/restarts API and starts Next.js with
+with TypeScript decorator metadata, watches/restarts API/worker and starts Next.js with
 hot reload. Ctrl+C stops the processes. Run `docker compose down` after finishing.
 If the full stack is already running, stop its api/web containers before starting
 local development on the same ports.
@@ -83,7 +83,8 @@ Tests create/delete their own fixture; never use a production database.
   201 on creation, 200 on replay, 409 on conflict.
 
 Contracts: [.ai_context/backend_contracts.md](.ai_context/backend_contracts.md).
-Clinical risk thresholds remain future work. JWT and mission access guards are enabled.
+Built-in clinical cutoffs are not supplied; operators configure reference limits.
+JWT and mission access guards are enabled.
 
 ## Login and access
 
@@ -123,7 +124,32 @@ demo seed lacks versioned rules/measurement units and will show unassessed risk
 until compatible data is entered. Use synthetic test data only for demonstrations.
 
 API and calculation details: [.ai_context/health_rules.md](.ai_context/health_rules.md).
-The API checks freshness automatically every 60 seconds. Configure this with
+The worker checks freshness through BullMQ every 60 seconds. Configure this with
 HEALTH_SWEEP_ENABLED and HEALTH_SWEEP_INTERVAL_SECONDS in root `.env`.
 Acknowledging a warning does not alter the underlying risk or freshness.
 The seed smoke test permits additional generated warnings after API startup.
+
+## Telemetry and jobs
+
+POST `/api/v1/telemetry` accepts health/environment events and returns 202 with
+jobId and statusUrl. Supported provenance: AUTO_TELEMETRY, MANUAL_REPORT,
+DIAGNOSTIC_DEVICE. GET `/api/v1/jobs/:id` reports progress/result;
+POST `/api/v1/jobs/:id/retry` retries a failed accessible task. All require JWT and
+mission/profile permissions. Input event identity is immutable and deduplicated.
+
+PostgreSQL stores accepted payloads/results; Redis/BullMQ transports task IDs.
+Temporary Redis failure leaves saved events pending. The worker outbox dispatcher
+recovers them. Five automatic attempts use exponential backoff; a durable record
+is not duplicated if later evaluation fails. Redis uses AOF/noeviction and a named
+volume. `docker compose down` preserves both PostgreSQL and Redis data.
+
+POST `/api/v1/simulator/run` queues BASELINE_PROJECTION jobs with a UUID
+Idempotency-Key. This is a hypothetical baseline comparison, not the full future
+solar-storm/gravity simulation model. Simulations do not alter clinical data.
+
+Details and payload examples: [.ai_context/telemetry_jobs.md](.ai_context/telemetry_jobs.md).
+Set AURA_TEST_DATABASE_URL and AURA_TEST_REDIS_URL to isolated services for the
+queue integration test. QUEUE_PREFIX isolates queue namespaces; WORKER_CONCURRENCY
+defaults to 4. TASK_QUEUE_ENABLED=false is only for isolated tests. API readiness
+checks DB/Redis; worker readiness uses a 15-second heartbeat. API, worker and Redis
+must all run for automatic processing. Frontend refreshes telemetry every 15 seconds.

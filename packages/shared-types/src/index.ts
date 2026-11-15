@@ -23,21 +23,21 @@ export interface HealthZoneStatus { zone: BodyZone; status: AlertSeverity; riskS
 export interface CrewHealthResponse { crewMemberId: string; name: string; role: string; evaluatedAt: string; overallStatus: AlertSeverity; hasOutdatedData: boolean; zones: HealthZoneStatus[]; }
 export interface DailyHealthCheckRequest { crewMemberId: string; sourceType: 'MANUAL_REPORT'; moodScore: number; stressScore: number; fatigueScore: number; sleepHours: number; symptoms: string[]; notes: string; }
 export interface DailyHealthCheckResponse { success: true; checkId: string; recordedAt: string; checkDate: string; xpEarned: number; currentStreak: number; message: string; }
-export interface MissionEnvironment { radiationCans: number; totalRadiation: number; pO2: number; co2Ppm: number; cabinPressure: number; temperature: number; humidity: number; status: AlertSeverity; }
+export interface MissionEnvironment { radiationCans: number; totalRadiation: number; pO2: number; co2Ppm: number; cabinPressure: number; temperature: number; humidity: number; status: AlertSeverity; recordedAt: string; sourceType: DataSourceType; }
 export interface MissionStatusResponse { missionId: string; name: string; destination: string; phase: string; missionDay: number; commDelaySeconds: number; commDelayFormatted: string; environment: MissionEnvironment; hazardsStatus: Record<'spaceRadiation' | 'alteredGravity' | 'isolationConfinement' | 'distanceFromEarth' | 'hostileEnvironment', AlertSeverity>; }
 export interface CrewSummary { id: string; name: string; role: string; photoUrl: string | null; }
 export interface AlertResponse { id: string; missionId: string; crewMemberId: string | null; hazardType: HazardType; severity: AlertSeverity; title: string; message: string; isResolved: boolean; createdAt: string; resolvedAt: string | null; resolvedById: string | null; resolutionNote: string | null; zone: BodyZone | null; origin: string; }
 export interface ProtocolResponse { id: string; title: string; hazard: HazardType; description: string; steps: string[]; }
 export interface ListResponse<T> { items: T[]; total: number; offset: number; limit: number; }
 export interface ResolveAlertRequest { note: string; }
-export interface SimulationRequest { scenarioType: string; parameters: { radiationMultiplier: number; cansSpike: boolean; gravityLevel: number; countermeasuresActive: boolean; selectedCountermeasure: string; }; }
-export interface SimulationResponse { simulationId: string; predictedImpacts: Record<string, string>; affectedZones: BodyZone[]; recommendedProtocolId: string; recommendationText: string; }
+export interface SimulationRequest { scenarioType: 'BASELINE_PROJECTION'; crewMemberId: string; projection: Omit<HealthRecordRequest, 'recordedAt'>; }
+export type SimulationResponse = AsyncTaskResponse;
 export interface BaselineRule { metric: string; unit: string; baseline: number; comparison: 'ABSOLUTE' | 'PERCENT'; direction: 'INCREASE' | 'DECREASE' | 'BOTH'; attentionDelta: number; criticalDelta: number; allowedSources: DataSourceType[]; }
 export interface BaselineRequest { zone: BodyZone; rules: BaselineRule[]; reason: string; }
-export interface BaselineResponse { id: string; zone: BodyZone; createdAt: string; baselineData: unknown; }
+export interface BaselineResponse { id: string; zone: BodyZone; createdAt: string; baselineData: unknown; assessmentJobId?: string; }
 export interface MetricEvidence { metric: string; unit: string; baseline: number; current: number | null; delta: number | null; comparison: 'ABSOLUTE' | 'PERCENT'; riskStatus: RiskStatus | null; reason: string; }
 export interface HealthRecordRequest { zone: BodyZone; sourceType: DataSourceType; metrics: Record<string, number>; units: Record<string, string>; symptoms: string[]; recordedAt?: string; }
-export interface HealthRecordResponse { id: string; zone: BodyZone | null; sourceType: DataSourceType; metrics: unknown; units: unknown; symptoms: string[]; recordedAt: string; isOutdated: boolean; }
+export interface HealthRecordResponse { id: string; zone: BodyZone | null; sourceType: DataSourceType; metrics: unknown; units: unknown; symptoms: string[]; recordedAt: string; isOutdated: boolean; assessmentJobId?: string; }
 export interface AuditEventResponse { id: string; actorId: string | null; actorUsername: string | null; crewMemberId: string | null; action: string; entityId: string | null; details: unknown; createdAt: string; }
 export const zoneMetricCatalog: Record<BodyZone, Record<string, string>> = {
   HEAD_EYES: { intraocularPressure: 'mmHg', octRetinalThickness: 'um', visualAcuity: 'ratio' },
@@ -46,3 +46,9 @@ export const zoneMetricCatalog: Record<BodyZone, Record<string, string>> = {
   WHOLE_BODY_IMMUNE: { whiteBloodCells: '10^9/L', cReactiveProtein: 'mg/L' },
   SKELETON_MUSCLES: { muscleMass: 'kg', boneMineralDensity: 'g/cm2', spineTScore: 'score' },
 };
+export interface EnvironmentMetrics { radiationCans: number; totalRadiation: number; pO2: number; co2Ppm: number; cabinPressure: number; temperature: number; humidity: number; }
+export type TelemetryRequest = { eventId: string; producerId: string; recordedAt: string } & (
+  { kind: 'HEALTH'; crewMemberId: string; measurement: Omit<HealthRecordRequest, 'recordedAt'> } |
+  { kind: 'ENVIRONMENT'; sourceType: DataSourceType; metrics: EnvironmentMetrics }
+);
+export interface AsyncTaskResponse { jobId: string; kind: 'TELEMETRY' | 'HEALTH_RECHECK' | 'SIMULATION'; state: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'; attempts: number; generation: number; result: unknown; errorCode: string | null; createdAt: string; updatedAt: string; statusUrl: string; }

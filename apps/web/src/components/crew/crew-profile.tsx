@@ -15,7 +15,7 @@ export function CrewProfile({ id, actor }: { id: string; actor: AuthUser }) {
   const [revision, setRevision] = useState(0), [error, setError] = useState('');
   const operator = actor.role !== 'CREW_MEMBER';
   const refresh = () => setRevision((value) => value + 1);
-  useEffect(() => { const timer = setInterval(() => setRevision((value) => value + 1), 60000); return () => clearInterval(timer); }, []);
+  useEffect(() => { const timer = setInterval(() => setRevision((value) => value + 1), 15000); return () => clearInterval(timer); }, []);
   useEffect(() => {
     let active = true;
     Promise.all([

@@ -41,7 +41,7 @@ export class MissionService {
       missionId: mission.id, name: mission.name, destination: mission.destination, phase: mission.phase,
       missionDay: mission.missionDay, commDelaySeconds: mission.commDelaySeconds,
       commDelayFormatted: this.formatDelay(mission.commDelaySeconds),
-      environment: { radiationCans: environment.radiationCans, totalRadiation: environment.totalRadiation, pO2: environment.pO2, co2Ppm: environment.co2Ppm, cabinPressure: environment.cabinPressure, temperature: environment.temperature, humidity: environment.humidity, status: environmentStatus },
+      environment: { radiationCans: environment.radiationCans, totalRadiation: environment.totalRadiation, pO2: environment.pO2, co2Ppm: environment.co2Ppm, cabinPressure: environment.cabinPressure, temperature: environment.temperature, humidity: environment.humidity, status: environmentStatus, recordedAt: environment.recordedAt.toISOString(), sourceType: environment.sourceType },
       hazardsStatus,
     };
   }

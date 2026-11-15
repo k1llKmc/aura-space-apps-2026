@@ -53,6 +53,7 @@ model User {
   createdAt DateTime @default(now())
   resolvedAlerts Alert[]
   auditEvents AuditEvent[]
+  backgroundTasks BackgroundTask[]
   @@index([missionId])
 }
 
@@ -71,6 +72,7 @@ model Mission {
   alerts Alert[]
   users User[]
   auditEvents AuditEvent[]
+  backgroundTasks BackgroundTask[]
 }
 model CrewMember {
   id String @id @default(uuid())
@@ -89,6 +91,7 @@ model CrewMember {
   alerts Alert[]
   auditEvents AuditEvent[]
   zoneStates ZoneState[]
+  backgroundTasks BackgroundTask[]
   @@index([missionId])
 }
 model IndividualBaseline {
@@ -139,6 +142,7 @@ model EnvironmentRecord {
   cabinPressure Float
   temperature Float
   humidity Float
+  sourceType DataSourceType @default(AUTO_TELEMETRY)
   recordedAt DateTime @default(now())
   @@index([missionId, recordedAt])
 }
@@ -196,4 +200,41 @@ model AuditEvent {
   createdAt DateTime @default(now())
   @@index([missionId, createdAt])
   @@index([crewMemberId, createdAt])
+}
+
+enum TaskKind {
+  TELEMETRY
+  HEALTH_RECHECK
+  SIMULATION
+}
+
+enum TaskState {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model BackgroundTask {
+  id String @id @default(uuid())
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  crewMemberId String?
+  crewMember CrewMember? @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  requesterId String?
+  requester User? @relation(fields: [requesterId], references: [id], onDelete: SetNull)
+  kind TaskKind
+  state TaskState @default(PENDING)
+  dedupKey String @unique
+  payloadHash String
+  payload Json
+  result Json?
+  errorCode String?
+  attempts Int @default(0)
+  generation Int @default(0)
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([state, publishedAt])
+  @@index([missionId, createdAt])
 }

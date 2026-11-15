@@ -12,6 +12,9 @@ x-api-environment: &api-environment
   AUTH_BOOTSTRAP_PASSWORD: ${AUTH_BOOTSTRAP_PASSWORD:?Run npm start to generate root .env secrets first}
   HEALTH_SWEEP_ENABLED: ${HEALTH_SWEEP_ENABLED:-true}
   HEALTH_SWEEP_INTERVAL_SECONDS: ${HEALTH_SWEEP_INTERVAL_SECONDS:-60}
+  TASK_QUEUE_ENABLED: ${TASK_QUEUE_ENABLED:-true}
+  QUEUE_PREFIX: ${QUEUE_PREFIX:-aura}
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
 
 services:
   bootstrap:
@@ -44,6 +47,23 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+  worker:
+    image: aura-api:local
+    restart: unless-stopped
+    environment: *api-environment
+    command: ["node", "scripts/run.mjs", "worker"]
+    stop_grace_period: 60s
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "scripts/run.mjs", "worker-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
   web:
     build:
       context: .
@@ -53,6 +73,8 @@ services:
       - "127.0.0.1:${WEB_PORT:-3000}:3000"
     depends_on:
       api:
+        condition: service_healthy
+      worker:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -79,6 +101,9 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - aura-redis-data:/data
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     healthcheck:
@@ -88,3 +113,4 @@ services:
       retries: 10
 volumes:
   aura-postgres-data:
+  aura-redis-data:

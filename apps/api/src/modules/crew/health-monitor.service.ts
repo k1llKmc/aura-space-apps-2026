@@ -1,49 +1,11 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CrewService } from './crew.service';
 
 @Injectable()
-export class HealthMonitor implements OnModuleInit, OnModuleDestroy {
-  private timer?: NodeJS.Timeout;
-  private initial?: NodeJS.Timeout;
-  private busy = false;
-  private pending?: Promise<void>;
-  private readonly logger = new Logger(HealthMonitor.name);
+export class HealthMonitor {
   constructor(private readonly prisma: PrismaService, private readonly crew: CrewService) {}
-  onModuleInit() {
-    if (process.env.HEALTH_SWEEP_ENABLED === 'false') return;
-    const seconds = Number(process.env.HEALTH_SWEEP_INTERVAL_SECONDS || 60);
-    if (!Number.isInteger(seconds) || seconds < 10 || seconds > 86400) throw new Error('HEALTH_SWEEP_INTERVAL_SECONDS must be 10–86400.');
-    const run = () => {
-      if (this.busy) return;
-      this.pending = this.sweep().catch((error) => this.logger.error('Health sweep failed; it will retry on the next interval.', error instanceof Error ? error.stack : undefined));
-    };
-    this.initial = setTimeout(run, 1000); this.initial.unref();
-    this.timer = setInterval(run, seconds * 1000); this.timer.unref();
-  }
-  async onModuleDestroy() { clearTimeout(this.initial); clearInterval(this.timer); await this.pending; }
-  async refreshCrew(id: string) {
-    try { await this.reconcileCrew(id); }
-    catch (error) { this.logger.error('Measurement saved; evaluation will retry on the next sweep.', error instanceof Error ? error.stack : undefined); }
-  }
-  async sweep() {
-    if (this.busy) return;
-    this.busy = true;
-    try {
-      let cursor: string | undefined;
-      while (true) {
-        const batch = await this.prisma.crewMember.findMany({ orderBy: { id: 'asc' }, take: 50,
-          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), select: { id: true } });
-        for (const member of batch) {
-          try { await this.reconcileCrew(member.id); }
-          catch (error) { this.logger.error(`Health check failed for crew ${member.id}; continuing with the next profile.`, error instanceof Error ? error.stack : undefined); }
-        }
-        if (batch.length < 50) break;
-        cursor = batch[batch.length - 1].id;
-      }
-    } finally { this.busy = false; }
-  }
   async reconcileCrew(id: string) {
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`;

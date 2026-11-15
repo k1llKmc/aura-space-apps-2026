@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const { zoneMetricCatalog } = require('@aura/shared-types');
 const { zoneHealth } = require('../dist/modules/crew/crew.health');
 const { baselineSchema, recordSchema } = require('../dist/modules/crew/health.schemas');
-const { HealthMonitor } = require('../dist/modules/crew/health-monitor.service');
 const now = new Date('2026-11-15T12:00:00Z');
 function fixture(zone, patch = {}) {
   const [metric, unit] = Object.entries(zoneMetricCatalog[zone])[0];
@@ -55,22 +54,4 @@ test('direction, zero references, units and threshold ordering are validated', (
     assert.equal(baselineSchema.safeParse({ ...valid, rules: [invalid] }).success, false);
   }
   assert.equal(recordSchema.safeParse({ zone: 'HEAD_EYES', sourceType: 'DIAGNOSTIC_DEVICE', metrics: { [metric]: 5 }, units: {}, symptoms: [] }).success, false);
-});
-test('automatic sweep runs on startup and interval, then stops on shutdown', async (context) => {
-  const enabled = process.env.HEALTH_SWEEP_ENABLED, interval = process.env.HEALTH_SWEEP_INTERVAL_SECONDS;
-  process.env.HEALTH_SWEEP_ENABLED = 'true'; process.env.HEALTH_SWEEP_INTERVAL_SECONDS = '10';
-  context.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
-  const monitor = new HealthMonitor({}, {});
-  let count = 0;
-  monitor.sweep = async () => { count++; };
-  try {
-    monitor.onModuleInit(); context.mock.timers.tick(1000); await Promise.resolve();
-    assert.equal(count, 1);
-    context.mock.timers.tick(10000); await Promise.resolve(); assert.equal(count, 2);
-    await monitor.onModuleDestroy(); context.mock.timers.tick(20000); assert.equal(count, 2);
-  } finally {
-    context.mock.timers.reset();
-    if (enabled === undefined) delete process.env.HEALTH_SWEEP_ENABLED; else process.env.HEALTH_SWEEP_ENABLED = enabled;
-    if (interval === undefined) delete process.env.HEALTH_SWEEP_INTERVAL_SECONDS; else process.env.HEALTH_SWEEP_INTERVAL_SECONDS = interval;
-  }
 });

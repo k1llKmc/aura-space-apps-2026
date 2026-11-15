@@ -14,6 +14,7 @@ test('health lifecycle: versioned baseline, evidence, history, alert episodes an
     process.env.DATABASE_URL = process.env.AURA_TEST_DATABASE_URL;
     process.env.JWT_SECRET = 'health-isolated-test-secret-12345678901234567890';
     process.env.HEALTH_SWEEP_ENABLED = 'false';
+    process.env.TASK_QUEUE_ENABLED = 'false';
     const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
     const missionId = randomUUID(), crewId = randomUUID(), otherId = randomUUID();
     const username = `medical-${randomUUID().slice(0, 8)}`, password = 'health-test-password-1234';
@@ -43,6 +44,7 @@ test('health lifecycle: versioned baseline, evidence, history, alert episodes an
       assert.equal((await call(`${root}/baselines`, token, { ...policy, rules: [{ ...policy.rules[0], unit: 'incorrect' }] })).status, 400);
       const baseline = await call(`${root}/baselines`, token, policy);
       assert.equal(baseline.status, 201);
+      await monitor.reconcileCrew(crewId);
       let profile = (await call(`${root}/health`, token)).body;
       assert.equal(profile.zones[0].dataState, 'MISSING'); assert.equal(profile.zones[0].riskStatus, null);
       const count = await prisma.alert.count({ where: { crewMemberId: crewId } });
@@ -53,6 +55,7 @@ test('health lifecycle: versioned baseline, evidence, history, alert episodes an
       assert.equal((await call(`${root}/records`, token, { ...record, recordedAt: new Date(Date.now() + 86400000).toISOString() })).status, 400);
       const created = await call(`${root}/records`, token, record);
       assert.equal(created.status, 201);
+      await monitor.reconcileCrew(crewId);
       profile = (await call(`${root}/health`, token)).body;
       assert.equal(profile.zones[0].riskStatus, 'CRITICAL'); assert.equal(profile.zones[0].dataState, 'CURRENT');
       assert.equal(profile.zones[0].baselineId, baseline.body.id); assert.equal(profile.zones[0].evidence[0].delta, 12);
@@ -65,6 +68,7 @@ test('health lifecycle: versioned baseline, evidence, history, alert episodes an
       // A new reference version is re-applied to the same record and is immutable.
       const changed = await call(`${root}/baselines`, token, { ...policy, rules: [{ ...policy.rules[0], baseline: 112 }] });
       assert.equal(changed.status, 201);
+      await monitor.reconcileCrew(crewId);
       profile = (await call(`${root}/health`, token)).body;
       assert.equal(profile.zones[0].riskStatus, 'NOMINAL'); assert.equal(profile.zones[0].baselineId, changed.body.id);
       assert.equal((await call(`${root}/baselines`, token)).body.total, 2);
@@ -77,6 +81,7 @@ test('health lifecycle: versioned baseline, evidence, history, alert episodes an
       const stale = await prisma.alert.findFirst({ where: { crewMemberId: crewId, zone: 'HEAD_EYES', origin: 'DATA_FRESHNESS', isResolved: false } });
       assert.ok(stale);
       await call(`${root}/records`, token, { ...record, metrics: { intraocularPressure: 112 } });
+      await monitor.reconcileCrew(crewId);
       assert.equal((await prisma.alert.findUnique({ where: { id: stale.id } })).isResolved, true);
       const history = await call(`${root}/records?limit=1&zone=HEAD_EYES`, crewToken);
       assert.equal(history.body.total, 2); assert.equal(history.body.items.length, 1);

@@ -20,12 +20,14 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/v1/missions/current)" = 401
           node scripts/verify-proxy.mjs
           docker compose exec -T api node scripts/run.mjs ci-test
+          docker compose exec -T -e WORKER_SMOKE_API_URL=http://web:3000/api/v1 api node scripts/run.mjs worker-smoke
       - name: Verify restart without duplicate seed data
         run: |
           docker compose down
           npm start
           docker compose exec -T api node scripts/run.mjs smoke
           node scripts/verify-proxy.mjs
+          docker compose exec -T -e WORKER_SMOKE_API_URL=http://web:3000/api/v1 api node scripts/run.mjs worker-smoke
       - name: Logs
         if: always()
         run: docker compose logs --no-color

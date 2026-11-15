@@ -1,10 +1,20 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { BodyZone, DataSourceType, zoneMetricCatalog, type BaselineRule } from '@aura/shared-types';
+import { BodyZone, DataSourceType, zoneMetricCatalog, type BaselineRule, type AsyncTaskResponse, type BaselineResponse, type HealthRecordResponse } from '@aura/shared-types';
 import { apiClient } from '@/services/api/client';
 const inputClass = 'mt-1 block w-full rounded border border-slate-600 bg-slate-800 p-2 text-white';
 type RuleDraft = { metric: string; baseline: string; attention: string; critical: string; direction: BaselineRule['direction']; comparison: BaselineRule['comparison']; sources: DataSourceType[] };
 function draft(zone: BodyZone): RuleDraft { return { metric: Object.keys(zoneMetricCatalog[zone])[0], baseline: '', attention: '', critical: '', direction: 'BOTH', comparison: 'ABSOLUTE', sources: [] }; }
+async function assessmentState(id?: string): Promise<string> {
+  if (!id) return 'PENDING';
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { data } = await apiClient.get<AsyncTaskResponse>(`/jobs/${id}`);
+    if (data.state === 'COMPLETED' || data.state === 'FAILED') return data.state;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  return 'PENDING';
+}
+function assessmentMessage(state: string) { return state === 'COMPLETED' ? 'Assessment updated.' : state === 'FAILED' ? 'Assessment failed; your data is saved.' : 'Assessment is queued and will update automatically.'; }
 export function HealthEditors({ id, refresh }: { id: string; refresh: () => void }) {
   const [zone, setZone] = useState<BodyZone>('HEAD_EYES');
   const [recordZone, setRecordZone] = useState<BodyZone>('HEAD_EYES');
@@ -15,8 +25,9 @@ export function HealthEditors({ id, refresh }: { id: string; refresh: () => void
     event.preventDefault(); setBusy(true); setError(''); setSuccess('');
     const fields = new FormData(event.currentTarget);
     try {
-      await apiClient.post(`/crew/${id}/baselines`, { zone, reason: fields.get('reason'), rules: rules.map((item) => ({ metric: item.metric, unit: zoneMetricCatalog[zone][item.metric], baseline: Number(item.baseline), attentionDelta: Number(item.attention), criticalDelta: Number(item.critical), direction: item.direction, comparison: item.comparison, allowedSources: item.sources })) });
-      setSuccess('Reference version saved. Existing measurements have been re-evaluated.'); refresh();
+      const { data } = await apiClient.post<BaselineResponse>(`/crew/${id}/baselines`, { zone, reason: fields.get('reason'), rules: rules.map((item) => ({ metric: item.metric, unit: zoneMetricCatalog[zone][item.metric], baseline: Number(item.baseline), attentionDelta: Number(item.attention), criticalDelta: Number(item.critical), direction: item.direction, comparison: item.comparison, allowedSources: item.sources })) });
+      const state = await assessmentState(data.assessmentJobId).catch(() => 'PENDING');
+      setSuccess(`Reference version saved. ${assessmentMessage(state)}`); refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save reference.'); }
     finally { setBusy(false); }
   }
@@ -30,10 +41,11 @@ export function HealthEditors({ id, refresh }: { id: string; refresh: () => void
     }
     try {
       const time = fields.get('recordedAt');
-      await apiClient.post(`/crew/${id}/records`, { zone: recordZone, sourceType: fields.get('sourceType'), metrics, units,
+      const { data } = await apiClient.post<HealthRecordResponse>(`/crew/${id}/records`, { zone: recordZone, sourceType: fields.get('sourceType'), metrics, units,
         symptoms: String(fields.get('symptoms') || '').split(',').map((value) => value.trim()).filter(Boolean),
         ...(time ? { recordedAt: new Date(String(time)).toISOString() } : {}) });
-      form.reset(); setSuccess('Measurement saved. The profile will refresh.'); refresh();
+      const state = await assessmentState(data.assessmentJobId).catch(() => 'PENDING');
+      form.reset(); setSuccess(`Measurement saved. ${assessmentMessage(state)}`); refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save measurement.'); }
     finally { setBusy(false); }
   }

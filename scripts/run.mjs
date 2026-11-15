@@ -31,10 +31,12 @@ function node(script, args = []) { return launch(process.execPath, [path.join(ro
 const mode = process.argv[2];
 if (mode === 'ci-test') {
   env.AURA_TEST_DATABASE_URL = env.DATABASE_URL;
-  launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs', 'apps/api/test/health-rules.test.cjs', 'apps/api/test/health.database.test.cjs'])
+  env.AURA_TEST_REDIS_URL = env.REDIS_URL;
+  launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs', 'apps/api/test/health-rules.test.cjs', 'apps/api/test/health.database.test.cjs', 'apps/api/test/tasks.queue.test.cjs'])
     .on('exit', (code) => { process.exitCode = code ?? 1; });
-} else if (mode === 'api' || mode === 'bootstrap') {
-  node(mode === 'api' ? 'apps/api/dist/main.js' : 'scripts/bootstrap.cjs').on('exit', (code) => { process.exitCode = code ?? 1; });
+} else if (['api', 'bootstrap', 'worker', 'worker-health', 'worker-smoke'].includes(mode)) {
+  const entries = { api: 'apps/api/dist/main.js', bootstrap: 'scripts/bootstrap.cjs', worker: 'apps/api/dist/worker.js', 'worker-health': 'apps/api/dist/worker-health.js', 'worker-smoke': 'scripts/verify-worker.cjs' };
+  node(entries[mode]).on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'up') {
   launch('docker', ['compose', 'up', '--build', '-d', '--wait']).on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'dev') {
@@ -45,6 +47,7 @@ if (mode === 'ci-test') {
   if (build.status !== 0) process.exit(build.status ?? 1);
   node('node_modules/typescript/bin/tsc', ['-p', 'apps/api/tsconfig.json', '--watch', '--preserveWatchOutput']);
   launch(process.execPath, ['--watch', '--watch-path', 'apps/api/dist', 'apps/api/dist/main.js']);
+  launch(process.execPath, ['--watch', '--watch-path', 'apps/api/dist', 'apps/api/dist/worker.js']);
   node('node_modules/next/dist/bin/next', ['dev', 'apps/web', '-p', env.WEB_PORT || '3000']);
   children.forEach((child) => child.on('exit', (code) => {
     children.filter((other) => other !== child).forEach((other) => other.kill());

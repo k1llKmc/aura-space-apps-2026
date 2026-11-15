@@ -1,6 +1,8 @@
 # Crew health — baseline-v1
 
 This revision supersedes the earlier statement that every zone has unknown risk.
+Scheduling now uses the separate BullMQ worker documented in telemetry_jobs.md;
+the older in-process timer/immediate evaluation description below is superseded.
 The engine implements configurable reference comparisons, not disease diagnosis.
 No universal clinical cutoffs are shipped. Configuring a rule is an authorized
 operator action, not certification that the rule is medically validated.
@@ -86,18 +88,19 @@ All require JWT and the existing mission/profile authorization.
   their mission; Crew Members see only their own profile events. Foreign profiles
   are rejected. Read operations do not generate journal spam.
 
-Lists use the existing limit/offset envelope. Writes trigger immediate evaluation.
-If evaluation fails after a successful write, the record remains saved and the
-failure is logged; the scheduled sweep retries. Raw record ingestion is an
+Lists use the existing limit/offset envelope. Writes atomically enqueue a durable
+assessment job and return assessmentJobId. The worker evaluates asynchronously;
+the record remains saved if evaluation fails and retries are tracked by the job.
+Raw record ingestion is an
 operator workflow in this iteration, not authenticated hardware telemetry.
 
 ## Automatic checks and warning lifecycle
 
-The single-node API starts a sweep after one second and repeats every 60 seconds.
-HEALTH_SWEEP_ENABLED=false disables it. HEALTH_SWEEP_INTERVAL_SECONDS supports
-10–86400. Reads still compute freshness when the worker is disabled. Sweeps process
-50 crew at a time, skip failed profiles with an error log, and retry next interval.
-Local overlap is prevented; PostgreSQL advisory transaction locks serialize each
+The separate BullMQ worker schedules per-profile checks every 60 seconds.
+HEALTH_SWEEP_ENABLED=false disables scheduled scans. HEALTH_SWEEP_INTERVAL_SECONDS
+supports 10–86400. Reads still compute freshness when the worker is disabled.
+Scans enqueue profiles in batches of 50; each profile job retries independently.
+PostgreSQL advisory transaction locks serialize each
 crew's snapshot reconciliation and reference/record writes across API instances.
 
 ZoneState stores the last reconciled result and evaluation time. A semantic change
@@ -127,7 +130,8 @@ Append-only through the API: BASELINE_SET, HEALTH_RECORD_CREATED,
 DAILY_CHECK_CREATED, HEALTH_STATE_CHANGED, ALERT_GENERATED, ALERT_AUTO_RESOLVED,
 ALERT_RESOLVED, USER_CREATED and AUTH_LOGOUT. Mutations and their events are written
 in the same DB transaction. Operator IDs/usernames and timestamps identify actions;
-background events have actorId=null. Passwords and access tokens are never logged.
+background events have actorId=null. Telemetry/task lifecycle events are described
+in telemetry_jobs.md. Passwords and access tokens are never logged.
 The journal contains medical evidence and uses the same profile access restrictions.
 This is an application audit trail, not a cryptographically tamper-proof archive;
 DB administrators retain access, and mission deletion cascades related records.
@@ -138,4 +142,4 @@ Crew roster/profile now exposes all five zones, independent risk/data labels,
 comparison evidence, profile warnings and acknowledgement notes, pageable history,
 reference versions and the journal. Operators can enter measurements and reference
 rules; Crew Members have read-only access to their own profile here. Profile data
-refreshes every 60 seconds and after writes, with loading/error/retry states.
+refreshes every 15 seconds and after writes, with loading/error/retry states.
