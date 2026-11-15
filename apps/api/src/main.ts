@@ -11,6 +11,7 @@ async function bootstrap(): Promise<void> {
   const environment = environmentSchema.parse(process.env);
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
+  app.enableShutdownHooks();
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(environment.API_PORT, '0.0.0.0');
   new Logger('Bootstrap').log(`AURA API listening on port ${environment.API_PORT}`);

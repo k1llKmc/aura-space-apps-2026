@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type { ApiErrorResponse } from '@/types';
 
-const baseURL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1').replace(/\/$/, '');
+const baseURL = '/api/v1';
 
 export class ApiClientError extends Error {
   constructor(public readonly response: ApiErrorResponse, public readonly cause?: unknown) {

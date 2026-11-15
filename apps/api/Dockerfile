@@ -1,14 +1,15 @@
-FROM node:22-alpine AS build
+FROM node:22-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
-RUN npm install
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci
 COPY apps/api apps/api
-RUN npm --workspace apps/api run prisma:generate && npm --workspace apps/api run build
-
-FROM node:22-alpine
-WORKDIR /app
+COPY .ai_context .ai_context
+COPY scripts scripts
+COPY .env.example .env.example
+RUN npm run db:generate && npm --workspace apps/api run build
 ENV NODE_ENV=production
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/api ./apps/api
-CMD ["node", "apps/api/dist/main.js"]
+EXPOSE 3001
+CMD ["node", "scripts/run.mjs", "api"]

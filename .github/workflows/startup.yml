@@ -1,0 +1,31 @@
+name: Verify complete startup
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and start from a clean database
+        run: npm start
+      - name: Check page and API proxy
+        run: |
+          curl --fail http://localhost:3000/ > /dev/null
+          curl --fail http://localhost:3000/api/v1/missions/current
+          docker compose exec -T api node --test apps/api/test/crew.test.cjs
+      - name: Verify restart without duplicate seed data
+        run: |
+          docker compose down
+          npm start
+          docker compose exec -T api node scripts/run.mjs smoke
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color
+      - name: Stop containers
+        if: always()
+        run: docker compose down
