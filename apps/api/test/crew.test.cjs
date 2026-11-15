@@ -75,6 +75,7 @@ function memoryService() {
       create: async ({ data }) => { checks.push(data); return data; },
     },
     healthRecord: { create: async ({ data }) => { healthRecords.push(data); return data; } },
+    auditEvent: { create: async () => ({}) },
   };
   return { service: new CrewService({ $transaction: async (fn) => fn(tx) }), checks, healthRecords };
 }

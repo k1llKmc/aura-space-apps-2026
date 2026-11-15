@@ -52,6 +52,7 @@ model User {
   disabled Boolean @default(false)
   createdAt DateTime @default(now())
   resolvedAlerts Alert[]
+  auditEvents AuditEvent[]
   @@index([missionId])
 }
 
@@ -69,6 +70,7 @@ model Mission {
   environmentLogs EnvironmentRecord[]
   alerts Alert[]
   users User[]
+  auditEvents AuditEvent[]
 }
 model CrewMember {
   id String @id @default(uuid())
@@ -85,6 +87,8 @@ model CrewMember {
   dailyChecks DailyHealthCheck[]
   users User[]
   alerts Alert[]
+  auditEvents AuditEvent[]
+  zoneStates ZoneState[]
   @@index([missionId])
 }
 model IndividualBaseline {
@@ -103,6 +107,7 @@ model HealthRecord {
   sourceType DataSourceType
   zone BodyZone?
   metrics Json
+  units Json @default("{}")
   symptoms String[]
   isOutdated Boolean @default(false)
   recordedAt DateTime @default(now())
@@ -152,6 +157,9 @@ model Alert {
   resolvedById String?
   resolvedBy User? @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
   resolutionNote String?
+  zone BodyZone?
+  origin String @default("OPERATOR")
+  dedupKey String? @unique
   createdAt DateTime @default(now())
   @@index([missionId, severity])
 }
@@ -162,4 +170,30 @@ model CountermeasureProtocol {
   description String
   steps String[]
   @@unique([title])
+}
+
+model ZoneState {
+  id String @id @default(uuid())
+  crewMemberId String
+  crewMember CrewMember @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  zone BodyZone
+  result Json
+  evaluatedAt DateTime
+  @@unique([crewMemberId, zone])
+}
+
+model AuditEvent {
+  id String @id @default(uuid())
+  missionId String
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  crewMemberId String?
+  crewMember CrewMember? @relation(fields: [crewMemberId], references: [id], onDelete: Cascade)
+  actorId String?
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action String
+  entityId String?
+  details Json
+  createdAt DateTime @default(now())
+  @@index([missionId, createdAt])
+  @@index([crewMemberId, createdAt])
 }

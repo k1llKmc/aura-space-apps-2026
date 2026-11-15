@@ -10,7 +10,8 @@ async function main(): Promise<void> {
   ]);
   const expected = { missions: 4, currentMissions: 1, crewMembers: 4, baselines: 2, healthRecords: 2, environmentRecords: 2, alerts: 2, protocols: 3 };
   const actual = { missions, currentMissions, crewMembers, baselines, healthRecords, environmentRecords, alerts, protocols };
-  const mismatches = Object.entries(expected).filter(([key, value]) => actual[key as keyof typeof actual] !== value);
+  const mismatches = Object.entries(expected).filter(([key, value]) => key === 'alerts'
+    ? actual.alerts < value : actual[key as keyof typeof actual] !== value);
   if (mismatches.length > 0) throw new Error(`Seed verification failed: ${mismatches.map(([key, value]) => `${key} expected ${value}, received ${actual[key as keyof typeof actual]}`).join('; ')}`);
   console.log(`Database smoke test passed: ${JSON.stringify(actual)}`);
 }

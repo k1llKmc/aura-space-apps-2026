@@ -22,7 +22,7 @@ export class MissionService {
       where: { id: missionId },
       include: {
         environmentLogs: { orderBy: { recordedAt: 'desc' }, take: 1 },
-        alerts: { where: { isResolved: false }, select: { hazardType: true, severity: true } },
+        alerts: { where: { isResolved: false, origin: { notIn: ['HEALTH_RISK', 'DATA_FRESHNESS'] } }, select: { hazardType: true, severity: true } },
       },
     });
     if (!mission) throw new NotFoundException('No current mission is configured.');

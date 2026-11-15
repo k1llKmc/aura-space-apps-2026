@@ -120,8 +120,8 @@ New clinical assessments and alert resolution are separate operations.
    resolved alerts, no zone inference, input boundaries, UTC rollover, streak gaps,
    concurrent submissions and idempotent replay.
 
-Zone risk is currently unknown for all zones because there is no persisted clinical
-assessment. Fresh measurements therefore still display OUTDATED (unknown assessment)
-with dataState CURRENT and isOutdated false. Clients must show both fields. Crew
-alerts may elevate overallStatus, but are not assigned to zones. Mission API behavior
-is unchanged. Automatic zone assessment is a separate future feature.
+Zone risk now uses the configurable baseline-v1 comparison engine described in
+health_rules.md. Without a compatible versioned rule set and explicit measurement
+units it remains unknown. Existing operator alerts still affect only overall risk;
+automatically generated health warnings have explicit zone provenance. Frontend
+shows independent riskStatus/dataState labels and comparison evidence.

@@ -20,15 +20,17 @@ export class CrewService {
     return { items, total, ...page };
   }
 
-  async getHealth(id: string): Promise<CrewHealthResponse> {
+  async getHealth(id: string, database: Prisma.TransactionClient = this.prisma): Promise<CrewHealthResponse> {
     const now = new Date();
-    const crew = await this.prisma.crewMember.findUnique({ where: { id }, include: {
+    const crew = await database.crewMember.findUnique({ where: { id }, include: {
       healthRecords: { where: { zone: { not: null }, recordedAt: { lte: now } },
         orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }], distinct: ['zone'] },
       alerts: { where: { isResolved: false } },
+      baselines: { where: { createdAt: { lte: now } }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], distinct: ['zone'] },
     } });
     if (!crew) throw new NotFoundException('Crew member not found.');
-    const zones = bodyZones.map((zone) => zoneHealth(zone, crew.healthRecords.find((item) => item.zone === zone), now));
+    const zones = bodyZones.map((zone) => zoneHealth(zone, crew.healthRecords.find((item) => item.zone === zone), now,
+      crew.baselines?.find((item) => item.zone === zone)));
     return { crewMemberId: crew.id, name: crew.name, role: crew.role,
       evaluatedAt: now.toISOString(), zones,
       hasOutdatedData: zones.some((zone) => zone.isOutdated),
@@ -37,7 +39,7 @@ export class CrewService {
     };
   }
 
-  async submitCheck(payload: DailyHealthCheckRequest, key: string): Promise<{ replay: boolean; body: DailyHealthCheckResponse }> {
+  async submitCheck(payload: DailyHealthCheckRequest, key: string, actor?: AuthUser): Promise<{ replay: boolean; body: DailyHealthCheckResponse }> {
     // Serializable retries resolve races through the same replay/date checks.
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -69,6 +71,8 @@ export class CrewService {
             zone: null, metrics: { moodScore: payload.moodScore, stressScore: payload.stressScore,
               fatigueScore: payload.fatigueScore, sleepHours: payload.sleepHours, notes: payload.notes },
             symptoms: payload.symptoms, recordedAt: now } });
+          await tx.auditEvent.create({ data: { missionId: crew.missionId, crewMemberId: crew.id, actorId: actor?.id ?? null,
+            action: 'DAILY_CHECK_CREATED', entityId: body.checkId, details: { sourceType: payload.sourceType, checkDate, xpEarned: 50 } } });
           return { replay: false, body };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       } catch (error) {

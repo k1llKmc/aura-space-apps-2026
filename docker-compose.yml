@@ -10,6 +10,8 @@ x-api-environment: &api-environment
   JWT_SECRET: ${JWT_SECRET:?Run npm start to generate root .env secrets first}
   AUTH_BOOTSTRAP_USERNAME: ${AUTH_BOOTSTRAP_USERNAME:-commander}
   AUTH_BOOTSTRAP_PASSWORD: ${AUTH_BOOTSTRAP_PASSWORD:?Run npm start to generate root .env secrets first}
+  HEALTH_SWEEP_ENABLED: ${HEALTH_SWEEP_ENABLED:-true}
+  HEALTH_SWEEP_INTERVAL_SECONDS: ${HEALTH_SWEEP_INTERVAL_SECONDS:-60}
 
 services:
   bootstrap:

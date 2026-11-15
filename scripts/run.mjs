@@ -31,7 +31,7 @@ function node(script, args = []) { return launch(process.execPath, [path.join(ro
 const mode = process.argv[2];
 if (mode === 'ci-test') {
   env.AURA_TEST_DATABASE_URL = env.DATABASE_URL;
-  launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs'])
+  launch(process.execPath, ['--test', 'apps/api/test/crew.test.cjs', 'apps/api/test/crew.database.test.cjs', 'apps/api/test/auth.database.test.cjs', 'apps/api/test/health-rules.test.cjs', 'apps/api/test/health.database.test.cjs'])
     .on('exit', (code) => { process.exitCode = code ?? 1; });
 } else if (mode === 'api' || mode === 'bootstrap') {
   node(mode === 'api' ? 'apps/api/dist/main.js' : 'scripts/bootstrap.cjs').on('exit', (code) => { process.exitCode = code ?? 1; });

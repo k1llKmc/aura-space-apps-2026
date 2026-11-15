@@ -12,6 +12,7 @@ const { HttpExceptionFilter } = require('../dist/common/filters/http-exception.f
 test('JWT and mission access: full HTTP role matrix against PostgreSQL',
   { skip: !process.env.AURA_TEST_DATABASE_URL }, async () => {
     process.env.DATABASE_URL = process.env.AURA_TEST_DATABASE_URL;
+    process.env.HEALTH_SWEEP_ENABLED = 'false';
     process.env.JWT_SECRET = 'isolated-test-secret-never-used-in-production-123456789';
     const prisma = new PrismaClient({ datasourceUrl: process.env.AURA_TEST_DATABASE_URL });
     const missionIds = [randomUUID(), randomUUID()];
@@ -89,6 +90,7 @@ test('JWT and mission access: full HTTP role matrix against PostgreSQL',
       assert.equal((await call('/auth/users', commander, { username: newUsername, password, role: 'CREW_MEMBER' })).status, 400);
       assert.equal((await call('/auth/users', commander, { username: newUsername, password, role: 'CREW_MEMBER', crewMemberId: crewIds[2] })).status, 403);
       assert.equal((await call('/auth/users', commander, { username: newUsername, password, role: 'CREW_MEMBER', crewMemberId: crewIds[1] })).status, 201);
+      assert.equal((await call('/auth/users', commander, { username: newUsername, password, role: 'CREW_MEMBER', crewMemberId: crewIds[1] })).status, 409);
       const check = { crewMemberId: crewIds[1], sourceType: 'MANUAL_REPORT', moodScore: 8, stressScore: 3, fatigueScore: 4, sleepHours: 8, symptoms: [], notes: '' };
       const key = randomUUID(), headers = { 'Idempotency-Key': key };
       assert.equal((await call('/crew/checks', medic, check, 'POST', headers)).status, 201);

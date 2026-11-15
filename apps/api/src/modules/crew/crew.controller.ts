@@ -28,7 +28,7 @@ export class CrewController {
     @Res({ passthrough: true }) response: Response, @Req() request: AuthRequest) {
     const payload = parse(dailyHealthCheckSchema, body);
     await this.auth.requireCrew(payload.crewMemberId, request.user);
-    const result = await this.crew.submitCheck(payload, parse(idempotencyKeySchema, key));
+    const result = await this.crew.submitCheck(payload, parse(idempotencyKeySchema, key), request.user);
     response.status(result.replay ? 200 : 201);
     return result.body;
   }

@@ -40,7 +40,11 @@ export class AuthService {
   }
 
   async logout(user: AuthUser): Promise<{ success: true }> {
-    await this.prisma.user.update({ where: { id: user.id }, data: { tokenVersion: { increment: 1 } } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: user.id }, data: { tokenVersion: { increment: 1 } } });
+      await tx.auditEvent.create({ data: { missionId: user.missionId, crewMemberId: user.crewMemberId, actorId: user.id,
+        action: 'AUTH_LOGOUT', entityId: user.id, details: {} } });
+    });
     return { success: true };
   }
 
@@ -49,8 +53,13 @@ export class AuthService {
     if (input.crewMemberId) await this.requireCrew(input.crewMemberId, actor);
     const passwordHash = await hashPassword(input.password);
     try {
-      return this.publicUser(await this.prisma.user.create({ data: { username: input.username, passwordHash,
-        role: input.role, missionId: actor.missionId, crewMemberId: input.crewMemberId ?? null } }));
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({ data: { username: input.username, passwordHash,
+          role: input.role, missionId: actor.missionId, crewMemberId: input.crewMemberId ?? null } });
+        await tx.auditEvent.create({ data: { missionId: actor.missionId, crewMemberId: user.crewMemberId, actorId: actor.id,
+          action: 'USER_CREATED', entityId: user.id, details: { role: user.role } } });
+        return this.publicUser(user);
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Username is already in use.');
       throw error;

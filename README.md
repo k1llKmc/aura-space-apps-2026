@@ -112,3 +112,18 @@ or medical data. Docker health checks use it. The mission endpoint now requires 
 Backend build, migrations, repeated bootstrap/seed, API tests and the frontend
 proxy are checked locally. Container image build and Compose end-to-end startup
 require Docker; they must be verified on a Docker-equipped host before deployment.
+
+## Crew health development
+
+The signed-in site now includes crew profiles, five zone assessments, independent
+risk/freshness labels, medical history, reference versions and a scoped activity
+journal. Commander/Medical Officer can add measurements and configure reference
+rules. Thresholds are operator-supplied; no clinical cutoffs are built in. The legacy
+demo seed lacks versioned rules/measurement units and will show unassessed risk
+until compatible data is entered. Use synthetic test data only for demonstrations.
+
+API and calculation details: [.ai_context/health_rules.md](.ai_context/health_rules.md).
+The API checks freshness automatically every 60 seconds. Configure this with
+HEALTH_SWEEP_ENABLED and HEALTH_SWEEP_INTERVAL_SECONDS in root `.env`.
+Acknowledging a warning does not alter the underlying risk or freshness.
+The seed smoke test permits additional generated warnings after API startup.

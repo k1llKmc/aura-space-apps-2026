@@ -5,7 +5,7 @@ import type { AlertResponse, ListResponse, ProtocolResponse } from '@aura/shared
 import { PrismaService } from '../../prisma/prisma.service';
 import { pagination, parse, uuid } from '../../common/validation';
 import type { AuthRequest } from '../auth/auth.guard';
-const alertsQuery = pagination.extend({ isResolved: z.enum(['true', 'false']).optional(), severity: z.enum(['NOMINAL', 'OUTDATED', 'ATTENTION', 'CRITICAL']).optional() }).strict();
+const alertsQuery = pagination.extend({ crewMemberId: z.string().uuid().optional(), isResolved: z.enum(['true', 'false']).optional(), severity: z.enum(['NOMINAL', 'OUTDATED', 'ATTENTION', 'CRITICAL']).optional() }).strict();
 const protocolsQuery = pagination.extend({ hazard: z.nativeEnum(HazardType).optional() }).strict();
 @Controller()
 export class CatalogController {
@@ -13,9 +13,11 @@ export class CatalogController {
 
   @Get('alerts')
   async alerts(@Query() query: unknown, @Req() request: AuthRequest): Promise<ListResponse<AlertResponse>> {
-    const { offset, limit, isResolved, severity } = parse(alertsQuery, query);
+    const { offset, limit, isResolved, severity, crewMemberId } = parse(alertsQuery, query);
     const actor = request.user;
+    if (actor.role === 'CREW_MEMBER' && crewMemberId && crewMemberId !== actor.crewMemberId) throw new ForbiddenException('Access to another crew profile is forbidden.');
     const where = { missionId: actor.missionId,
+      ...(crewMemberId ? { crewMemberId } : {}),
       ...(actor.role === 'CREW_MEMBER' ? { OR: [{ crewMemberId: null }, { crewMemberId: actor.crewMemberId }] } : {}),
       ...(isResolved === undefined ? {} : { isResolved: isResolved === 'true' }), ...(severity ? { severity } : {}) };
     const [items, total] = await this.prisma.$transaction([
@@ -33,11 +35,15 @@ export class CatalogController {
     const { note } = parse(z.object({ note: z.string().trim().min(1).max(2000) }).strict(), body);
     const where = { id, missionId: actor.missionId };
     // First resolver wins; repeats retain the original audit information.
-    await this.prisma.alert.updateMany({ where: { ...where, isResolved: false },
-      data: { isResolved: true, resolvedAt: new Date(), resolvedById: actor.id, resolutionNote: note } });
-    const item = await this.prisma.alert.findFirst({ where });
-    if (!item) throw new NotFoundException('Alert not found in your mission.');
-    return { ...item, createdAt: item.createdAt.toISOString(), resolvedAt: item.resolvedAt?.toISOString() ?? null };
+    return this.prisma.$transaction(async (tx) => {
+      const changed = await tx.alert.updateMany({ where: { ...where, isResolved: false },
+        data: { isResolved: true, resolvedAt: new Date(), resolvedById: actor.id, resolutionNote: note } });
+      const item = await tx.alert.findFirst({ where });
+      if (!item) throw new NotFoundException('Alert not found in your mission.');
+      if (changed.count) await tx.auditEvent.create({ data: { missionId: actor.missionId, crewMemberId: item.crewMemberId,
+        actorId: actor.id, action: 'ALERT_RESOLVED', entityId: id, details: { note, origin: item.origin, zone: item.zone } } });
+      return { ...item, createdAt: item.createdAt.toISOString(), resolvedAt: item.resolvedAt?.toISOString() ?? null };
+    });
   }
 
   @Get('protocols')
