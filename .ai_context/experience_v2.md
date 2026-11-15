@@ -22,7 +22,7 @@ Preview CI builds/tests and uploads artifacts without deploying anything.
 - `theme.tsx` and `app/experience.css`: dark-first monochrome surfaces, persistent
   light theme, status accents and responsive component layouts.
 
-BodyMap renders one continuous SVG silhouette with five independent, named
+BodyMap displays the user-supplied body reference image with five independent, named
 markers. Keyboard arrows/Home/End move focus; Enter/Space selects the detail
 panel. Native titles and focus/hover text identify zones without relying on color.
 
@@ -36,11 +36,13 @@ XP. Every 500 XP advances a level. Streaks count consecutive UTC dates ending
 today, or yesterday if today's check is still outstanding. Memory does not alter
 the daily-health streak. Seeded synthetic history spans the previous 30 days.
 
-Six illustrative stock portraits are bundled locally from Unsplash image assets:
-photo-1580489944761-15a19d654956, photo-1500648767791-00dcc994a43e,
-photo-1534528741775-53994a69daeb, photo-1506794778202-cad84cf45f1d,
-photo-1494790108377-be9c29b29330, photo-1535713875002-d1d0cf377fde.
-They are not photographs of the fictional crew. The logo is the user-supplied
+Six color portraits are bundled locally from the NASA Image and Video Library.
+`src/demo/portrait-sources.ts` maps each fictional profile to the actual person's
+name and NASA source URL. Both roster cards and profiles show attribution links.
+These are illustrative portraits, not photographs or medical data of the fictional
+crew. No grayscale filter is applied. BodyMap uses the first silhouette from the
+user's supplied raster reference, displayed through a clipped SVG viewport with
+independent marker overlays; no anatomical path is hand-drawn. The logo is the user-supplied
 asset, displayed with a theme-aware treatment; its original file is preserved.
 
 ## Review and rollback

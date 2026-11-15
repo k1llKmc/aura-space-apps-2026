@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useExperience } from './use-experience';
 import { progress, asset } from './format';
 import { useWorkspace } from '@/components/shell/workspace-provider';
+import { portraitSource } from '@/demo/portrait-sources';
 export function ProgressBar({
   id,
   compact = false,
@@ -39,6 +40,7 @@ export function ProgressBar({
   );
 }
 export function CrewHero({ id }: { id: string }) {
+  const source = portraitSource(id);
   const { roster } = useWorkspace(),
     member = roster.data?.find((c) => c.id === id),
     { data } = useExperience(),
@@ -48,15 +50,26 @@ export function CrewHero({ id }: { id: string }) {
       <img
         src={member?.photoUrl || asset('/crew/1.jpg')}
         alt={
-          member
-            ? `Illustrative portrait for ${member.name}`
-            : 'Illustrative crew portrait'
+          source
+            ? `${source.name}, NASA portrait used for a fictional demo profile`
+            : member
+              ? `Illustrative portrait for ${member.name}`
+              : 'Illustrative crew portrait'
         }
       />
       <div>
         <p className="eyebrow">Crew dossier / ARES I</p>
         <h2>{member?.name || 'Crew member'}</h2>
         <p className="muted">{member?.role} · Mars transit team</p>
+        {source && (
+          <p className="portrait-credit">
+            Photo:{' '}
+            <a href={source.url} target="_blank" rel="noreferrer">
+              {source.name} / NASA ↗
+            </a>{' '}
+            · Fictional profile; health data is synthetic.
+          </p>
+        )}
         <ProgressBar id={id} />
         <div className="achievement-row">
           <span>✦ {p.checks} check-ins</span>

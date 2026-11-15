@@ -9,6 +9,7 @@ import type {
 import { Badge } from './ui';
 import { ProgressBar } from '@/components/experience/progress';
 import { DEMO_MODE } from '@/demo/config';
+import { portraitSource } from '@/demo/portrait-sources';
 
 export const zoneLabels: Record<string, string> = {
   HEAD_EYES: 'Head & eyes',
@@ -41,13 +42,18 @@ export function CommDelayBadge({ value }: { value?: string }) {
   );
 }
 export function CrewCard({ member }: { member: CrewSummary }) {
+  const source = DEMO_MODE ? portraitSource(member.id) : undefined;
   return (
     <article className="panel crew-card">
       {member.photoUrl && (
         <img
           className="crew-card-photo"
           src={member.photoUrl}
-          alt={`Illustrative portrait for ${member.name}`}
+          alt={
+            source
+              ? `${source.name}, NASA portrait used for a fictional demo profile`
+              : `Illustrative portrait for ${member.name}`
+          }
           loading="lazy"
         />
       )}
@@ -71,6 +77,14 @@ export function CrewCard({ member }: { member: CrewSummary }) {
         Open profile →
       </Link>
       {DEMO_MODE && <ProgressBar id={member.id} compact />}
+      {source && (
+        <p className="portrait-credit">
+          Illustrative photo:{' '}
+          <a href={source.url} target="_blank" rel="noreferrer">
+            {source.name} / NASA ↗
+          </a>
+        </p>
+      )}
     </article>
   );
 }

@@ -44,9 +44,20 @@ test('public mission: no login, all routes, local writes, simulation, reload and
   await capture('01-mission-control');
   await nav('Crew Overview');
   await expect(page.locator('.crew-card')).toHaveCount(6);
+  await expect(page.locator('.portrait-credit a')).toHaveCount(6);
+  expect(
+    await page
+      .locator('.crew-card-photo')
+      .first()
+      .evaluate((image) => getComputedStyle(image).filter),
+  ).toBe('none');
   await capture('02-crew-overview');
   await page.locator('.crew-card a').first().click();
   await expect(page.locator('.body-map')).toBeVisible();
+  await expect(page.locator('.body-reference-image image')).toHaveAttribute(
+    'href',
+    /body-reference\.png$/,
+  );
   const zone = page.getByRole('button', { name: /^Head & eyes\. Risk:/ });
   await zone.focus();
   await page.keyboard.press('ArrowRight');
@@ -59,6 +70,12 @@ test('public mission: no login, all routes, local writes, simulation, reload and
     'Chest & cardiovascular',
   );
   await capture('03-crew-profile');
+  if (process.env.DEMO_SCREENSHOTS)
+    await page
+      .locator('.health-zone-layout')
+      .screenshot({
+        path: path.join(process.env.DEMO_SCREENSHOTS, '14-body-map.png'),
+      });
   await page.reload();
   await expect(page.locator('.body-map')).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
