@@ -1,9 +1,9 @@
-# Experience v2 — review branch
+# Experience v2 — approved public release
 
-Branch: `feat/mission-experience-v2`. Stable published release is protected by
-tag `demo-v1.0-stable` at `8709ca3`. This branch is not approved for publication.
-Pages deployment is limited to main, including manually triggered workflows.
-Preview CI builds/tests and uploads artifacts without deploying anything.
+Developed in `feat/mission-experience-v2`, approved by the user and promoted to
+`main`. The previous public release is protected by tag `demo-v1.0-stable` at
+`8709ca3`. Pages deployment is limited to main, including manually triggered
+workflows. Preview CI builds/tests and uploads artifacts without deploying anything.
 
 ## Component boundaries
 
@@ -47,10 +47,13 @@ asset, displayed with a theme-aware treatment; its original file is preserved.
 
 ## Review and rollback
 
-Review screenshots and browser checks before merging. No merge or publication
-has been requested. To recover the current public version later, create a revert
-commit for the merged update; the stable tag identifies the original source.
-Do not force-push or reset main. Before approval, the public site remains on main.
+Screenshots and browser checks were reviewed before the user approved publication.
+The public URL remains https://k1llkmc.github.io/aura-space-apps-2026/.
+To restore v1, create a new branch from main and revert the v2 commits in reverse
+order: `6b099ad`, `c976210`, `ebbb542`, `6d12e06`. Review and push the resulting
+commit to main so Pages republishes the restored version. The stable tag identifies
+the original source. Do not force-push or reset main. The separate v1 browser
+storage key preserves its earlier demonstration data.
 
 Browser coverage includes all existing demo flows plus marker keyboard control,
 sliders, three-round memory recall, persistence after reload, theme persistence,

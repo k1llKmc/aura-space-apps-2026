@@ -2,6 +2,13 @@
 
 Public interactive site: https://k1llkmc.github.io/aura-space-apps-2026/
 
+The approved v2 experience includes dark/light themes, credited NASA color
+portraits, an interactive body reference, crew XP/streaks, wellbeing sliders,
+a number-memory exercise, selectable trend periods and a filtered activity
+journal. The footer identifies the website as AI generated. Previous release:
+`demo-v1.0-stable`. Release architecture and recovery steps:
+[.ai_context/experience_v2.md](.ai_context/experience_v2.md).
+
 The public edition opens Mission Control directly, with a fictional Mars mission
 and six synthetic crew profiles. It needs no installation or login. Reports,
 warning reviews and reference edits stay in that browser. Reset demo restores
