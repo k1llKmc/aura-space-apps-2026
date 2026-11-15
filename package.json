@@ -6,6 +6,7 @@
     "db:generate": "npm --workspace apps/api run prisma:generate",
     "db:migrate": "npm --workspace apps/api run prisma:migrate",
     "db:seed": "npm --workspace apps/api run prisma:seed",
+    "db:setup": "npm run db:migrate && npm run db:seed",
     "web:build": "npm --workspace apps/web run build",
     "web:dev": "npm --workspace apps/web run dev"
   }
